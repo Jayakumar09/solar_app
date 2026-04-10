@@ -1,4 +1,6 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 
 const faqs = [
   { q: 'How long does solar panel installation take?', a: 'For residential projects, typical installation takes 2-3 days after site inspection. Commercial projects may take 1-2 weeks depending on system size.' },
@@ -12,7 +14,7 @@ const faqs = [
 ];
 
 export default function FAQ() {
-  const [open, setOpen] = useState ? useState(null) : (null);
+  const [open, setOpen] = useState(null);
 
   return (
     <div className="pt-20">
@@ -25,11 +27,27 @@ export default function FAQ() {
 
           <div className="space-y-4">
             {faqs.map(({ q, a }, i) => (
-              <motion.div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className="p-6">
+              <motion.div key={q} className="bg-white rounded-2xl shadow-sm overflow-hidden" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(open === i ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 p-6 text-left"
+                >
                   <h3 className="font-semibold text-gray-900 text-lg">{q}</h3>
-                  <p className="text-gray-600 mt-2">{a}</p>
-                </div>
+                  <ChevronDown className={`h-5 w-5 flex-shrink-0 text-primary-600 transition-transform ${open === i ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {open === i ? (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-6 pb-6 text-gray-600">{a}</p>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </motion.div>
             ))}
           </div>

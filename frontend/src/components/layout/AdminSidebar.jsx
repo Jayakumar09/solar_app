@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, FileText, Package, MessageSquare, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, FileText, Package, MessageSquare, LogOut, Calculator } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminSidebar() {
@@ -7,6 +7,7 @@ export default function AdminSidebar() {
 
   const links = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/admin/calculator', icon: Calculator, label: 'Solar Calculator' },
     { to: '/admin/leads', icon: Users, label: 'Leads' },
     { to: '/admin/bookings', icon: Calendar, label: 'Bookings' },
     { to: '/admin/enquiries', icon: MessageSquare, label: 'Enquiries' },

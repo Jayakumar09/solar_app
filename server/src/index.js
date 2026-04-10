@@ -15,12 +15,15 @@ const enquiryRoutes = require('./routes/enquiry.routes');
 const serviceRoutes = require('./routes/service.routes');
 const profileRoutes = require('./routes/profile.routes');
 const monitoringRoutes = require('./routes/monitoring.routes');
+const calculatorRoutes = require('./routes/calculator.routes');
 
 const { errorHandler } = require('./middleware/error.middleware');
 const { corsConfig } = require('./config/cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+console.log('🚀 Starting server...');
 
 app.use(helmet());
 app.use(cors(corsConfig));
@@ -45,6 +48,19 @@ app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/calculator', calculatorRoutes);
+
+console.log('\n=== REGISTERED ROUTES ===');
+const logRoutes = (layer) => {
+  if (layer.route) {
+    const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+    console.log(`${methods} ${layer.route.path}`);
+  } else if (layer.handle && layer.handle.stack) {
+    layer.handle.stack.forEach(logRoutes);
+  }
+};
+app._router.stack.forEach(logRoutes);
+console.log('=== END ROUTES ===\n');
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

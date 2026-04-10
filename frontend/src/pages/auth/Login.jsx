@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { Sun, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { getDashboardPath } from '../../utils/roles';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -17,7 +18,7 @@ export default function Login() {
     try {
       const data = await login(form.email, form.password);
       toast.success('Login successful!');
-      navigate(data.user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard');
+      navigate(getDashboardPath(data.user.role));
     } catch (err) {
       toast.error(err.response?.data?.error || 'Login failed. Please check your credentials.');
     } finally {
@@ -72,7 +73,8 @@ export default function Login() {
           <div className="mt-6 p-4 bg-gray-50 rounded-xl text-xs text-gray-500">
             <p className="font-medium mb-1">Demo Credentials:</p>
             <p>Admin: admin@greenhybridpower.in / admin123</p>
-            <p>Customer: customer@example.com / user123</p>
+            <p>Client: customer@example.com / user123</p>
+            <p>Vendor: vendor@greenhybridpower.in / user123</p>
           </div>
         </div>
       </div>

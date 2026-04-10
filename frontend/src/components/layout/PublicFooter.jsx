@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sun, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, Twitter, Zap, Wind } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { officeContact } from '../../config/siteContent';
 
 export default function PublicFooter() {
   return (
@@ -57,15 +58,15 @@ export default function PublicFooter() {
             <ul className="space-y-4">
               <li className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 mt-0.5 text-primary-400 flex-shrink-0" />
-                <span className="text-gray-400">Green Hybrid Power Pvt. Ltd., Mumbai, Maharashtra, India</span>
+                <span className="text-gray-400">{officeContact.fullAddress}</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                <span className="text-gray-400">+91 98765 43210</span>
+                <a href={officeContact.phoneHref} className="text-gray-400 hover:text-amber-400 transition-colors">{officeContact.phone}</a>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                <span className="text-gray-400">info@greenhybridpower.in</span>
+                <span className="text-gray-400">{officeContact.email}</span>
               </li>
             </ul>
             <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-primary-600/20 border border-primary-500/20">

@@ -2,20 +2,40 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { FileText, User, Phone, Mail, MapPin, CheckCircle } from 'lucide-react';
+import { FileText, User, Phone, Mail, MapPin, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
+const fallbackPlans = [
+  { id: 'basic', name: 'Basic Solar', price: 125000 },
+  { id: 'hybrid', name: 'Hybrid Power', price: 215000 },
+  { id: 'premium', name: 'Premium Suite', price: 350000 },
+];
 
 export default function QuoteRequest() {
   const [plans, setPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', pincode: '', plan_id: '', monthly_units: '', message: '' });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api.get('/plans').then(res => setPlans(res.data)).catch(() => {});
+    const fetchPlans = async () => {
+      try {
+        const res = await api.get('/plans');
+        if (res.data && res.data.length > 0) {
+          setPlans(res.data);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch plans, using fallback:', err);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+    fetchPlans();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
       await api.post('/leads', { ...form, service_type: 'quote_request' });
       toast.success('Quote request submitted! Our team will prepare a customized quotation and contact you within 24 hours.');
@@ -23,9 +43,12 @@ export default function QuoteRequest() {
     } catch {
       toast.error('Failed to submit request. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  const displayPlans = plans.length > 0 ? plans : fallbackPlans;
+  const showNoPlansMessage = !loadingPlans && plansError && plans.length === 0 && fallbackPlans.length === 0;
 
   return (
     <div className="pt-20">
@@ -71,10 +94,32 @@ export default function QuoteRequest() {
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Interested Plan</label>
-                  <select required value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none">
-                    <option value="">Select a plan</option>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ₹{Number(p.price).toLocaleString()}</option>)}
-                  </select>
+                  {loadingPlans ? (
+                    <div className="flex items-center gap-2 px-4 py-3 text-gray-500">
+                      <Loader2 className="w-5 h-5 animate-spin" /> Loading plans...
+                    </div>
+                  ) : (
+                    <>
+                      <select 
+                        required 
+                        value={form.plan_id} 
+                        onChange={e => setForm({ ...form, plan_id: e.target.value })} 
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none"
+                      >
+                        <option value="">Select a plan</option>
+                        {displayPlans.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.price ? `- ₹${Number(p.price).toLocaleString()}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      {showNoPlansMessage && (
+                        <div className="flex items-center gap-2 mt-2 text-amber-600 text-sm">
+                          <AlertCircle className="w-4 h-4" /> No plans available. Please contact us directly.
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Electricity Units</label>
@@ -92,8 +137,8 @@ export default function QuoteRequest() {
                 <span>Quotes are free and come with expert consultation</span>
               </div>
 
-              <button type="submit" disabled={loading} className="w-full py-4 gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 text-lg">
-                {loading ? 'Submitting...' : 'Request Quote'}
+              <button type="submit" disabled={submitting} className="w-full py-4 gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 text-lg">
+                {submitting ? 'Submitting...' : 'Request Quote'}
               </button>
             </form>
           </motion.div>

@@ -2,15 +2,25 @@ import { query } from '../config/database.js';
 
 export const getBookings = async (req, res, next) => {
   try {
+    const normalizedRole = req.user.role === 'customer' ? 'client' : req.user.role;
     let result;
-    if (req.user.role === 'admin') {
+    if (normalizedRole === 'admin') {
       result = await query(`
-        SELECT b.*, u.name as customer_name, u.email, p.name as plan_name 
+        SELECT b.*, u.name as customer_name, u.email, u.phone, u.city, p.name as plan_name 
         FROM bookings b 
         LEFT JOIN users u ON b.user_id = u.id 
         LEFT JOIN plans p ON b.plan_id = p.id 
         ORDER BY b.created_at DESC
       `);
+    } else if (normalizedRole === 'vendor') {
+      result = await query(`
+        SELECT b.*, u.name as customer_name, u.email, u.phone, u.city, p.name as plan_name
+        FROM bookings b
+        LEFT JOIN users u ON b.user_id = u.id
+        LEFT JOIN plans p ON b.plan_id = p.id
+        WHERE b.vendor_id = $1
+        ORDER BY b.created_at DESC
+      `, [req.user.id]);
     } else {
       result = await query(`
         SELECT b.*, p.name as plan_name 
@@ -41,10 +51,19 @@ export const createBooking = async (req, res, next) => {
 
 export const updateBookingStatus = async (req, res, next) => {
   try {
-    const { inspection_status, installation_status } = req.body;
+    const { id } = req.params;
+    const checkResult = await query('SELECT id FROM bookings WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    const { inspection_status, installation_status, status } = req.body;
     const result = await query(
-      'UPDATE bookings SET inspection_status = COALESCE($1, inspection_status), installation_status = COALESCE($2, installation_status) WHERE id = $3 RETURNING *',
-      [inspection_status, installation_status, req.params.id]
+      `UPDATE bookings SET 
+        inspection_status = COALESCE($1, inspection_status), 
+        installation_status = COALESCE($2, installation_status),
+        status = COALESCE($3, status)
+       WHERE id = $4 RETURNING *`,
+      [inspection_status, installation_status, status, id]
     );
     res.json(result.rows[0]);
   } catch (error) {

@@ -201,6 +201,9 @@ export default function Home() {
               <Link to="/quote-request" className="px-8 py-4 bg-white/10 text-white font-medium text-lg rounded-xl hover:bg-white/20 backdrop-blur-md border-2 border-white/30 hover:border-white/50 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
                 Get Quote
               </Link>
+              <Link to="/solar-calculator" className="px-8 py-4 bg-white/5 text-white font-medium text-lg rounded-xl hover:bg-white/10 backdrop-blur-md border-2 border-white/10 hover:border-white/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
+                <Calculator className="w-5 h-5" /> Calculator
+              </Link>
             </motion.div>
 
             <motion.div className="mt-10 flex flex-wrap justify-center gap-5 text-white/80" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>

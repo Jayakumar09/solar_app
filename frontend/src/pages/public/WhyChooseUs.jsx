@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Shield, Award, Clock, Users, CheckCircle, Star, ThumbsUp, Zap, Phone } from 'lucide-react';
+import { officeContact } from '../../config/siteContent';
 
 const reasons = [
   { icon: Award, title: 'Certified Experts', desc: 'Our team consists of NABCEP-certified engineers with extensive experience in solar and wind installations.' },
@@ -53,8 +54,8 @@ export default function WhyChooseUs() {
           <motion.div className="mt-16 bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-8 lg:p-12 text-white text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
             <h3 className="text-2xl font-bold mb-4">Ready to Experience the Green Hybrid Difference?</h3>
             <p className="text-white/80 mb-6 max-w-2xl mx-auto">Get a free consultation and customized quotation from our experts. No obligations, just honest advice.</p>
-            <a href="tel:+919876543210" className="inline-flex items-center px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-300 transition-colors">
-              <Phone className="w-5 h-5 mr-2" /> Call +91 98765 43210
+            <a href={officeContact.phoneHref} className="inline-flex items-center px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-300 transition-colors">
+              <Phone className="w-5 h-5 mr-2" /> Call {officeContact.phone}
             </a>
           </motion.div>
         </div>

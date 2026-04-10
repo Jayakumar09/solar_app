@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sun, Wind, Zap } from 'lucide-react';
+import { Menu, X, Sun, Wind, Zap, Calculator } from 'lucide-react';
 
 export default function PublicNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -17,6 +17,7 @@ export default function PublicNavbar() {
 
   const navLinks = [
     { to: '/', label: 'Home' },
+    { to: '/solar-calculator', label: 'Calculator' },
     { to: '/about', label: 'About' },
     { to: '/services', label: 'Services' },
     { to: '/vision', label: 'Vision' },

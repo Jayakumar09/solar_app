@@ -174,6 +174,69 @@ CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_energy_readings_customer ON energy_readings(customer_id);
 CREATE INDEX IF NOT EXISTS idx_energy_readings_time ON energy_readings(reading_time DESC);
 
+-- Solar Calculator Saved Calculations
+CREATE TABLE IF NOT EXISTS calculator_calcs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id UUID REFERENCES leads(id),
+  customer_id UUID REFERENCES users(id),
+  
+  -- Input fields
+  monthly_units DECIMAL(10, 2),
+  monthly_bill DECIMAL(10, 2),
+  roof_type TEXT,
+  roof_area DECIMAL(10, 2),
+  city TEXT,
+  connection_type TEXT CHECK (connection_type IN ('residential', 'commercial')),
+  phase_type TEXT CHECK (phase_type IN ('single', 'three')),
+  panel_wattage INTEGER,
+  inverter_type TEXT,
+  battery_required BOOLEAN DEFAULT false,
+  backup_hours INTEGER,
+  subsidy_eligible BOOLEAN DEFAULT true,
+  shadow_loss_percent DECIMAL(5, 2),
+  installation_type TEXT CHECK (installation_type IN ('rooftop', 'ground')),
+  structure_cost DECIMAL(12, 2),
+  wiring_cost DECIMAL(12, 2),
+  labor_cost DECIMAL(12, 2),
+  amc_included BOOLEAN DEFAULT false,
+  discount_percent DECIMAL(5, 2),
+  profit_margin_percent DECIMAL(5, 2),
+  
+  -- Calculated outputs
+  system_size_kw DECIMAL(10, 2),
+  panel_count INTEGER,
+  inverter_capacity_kw DECIMAL(10, 2),
+  battery_capacity_kwh DECIMAL(10, 2),
+  monthly_generation_kwh DECIMAL(10, 2),
+  subsidy_amount DECIMAL(12, 2),
+  total_project_cost DECIMAL(12, 2),
+  final_selling_price DECIMAL(12, 2),
+  monthly_savings DECIMAL(10, 2),
+  annual_savings DECIMAL(12, 2),
+  payback_years DECIMAL(6, 2),
+  cost_per_watt DECIMAL(10, 2),
+  
+  -- Metadata
+  notes TEXT,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'saved', 'quoted', 'booked')),
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for calculator calculations
+CREATE INDEX IF NOT EXISTS idx_calc_lead ON calculator_calcs(lead_id);
+CREATE INDEX IF NOT EXISTS idx_calc_customer ON calculator_calcs(customer_id);
+CREATE INDEX IF NOT EXISTS idx_calc_status ON calculator_calcs(status);
+
+-- Enable RLS
+ALTER TABLE calculator_calcs ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Admins can view/modify all
+CREATE POLICY "Admins can manage calcs" ON calculator_calcs FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+);
+
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_profiles ENABLE ROW LEVEL SECURITY;

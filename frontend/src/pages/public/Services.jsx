@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Sun, Wind, Battery, Settings, Smartphone, CheckCircle, ArrowRight } from 'lucide-react';
+import { Sun, Wind, Battery, Settings, Smartphone, CheckCircle } from 'lucide-react';
+import PlanImage from '../../components/common/PlanImage';
+import { planPlaceholders } from '../../config/siteContent';
+import api from '../../services/api';
 
 const plans = [
   {
@@ -38,6 +42,27 @@ const services = [
 ];
 
 export default function Services() {
+  const seededPlans = plans.map((plan) => ({
+    ...plan,
+    id: plan.type,
+    description: plan.desc,
+    image_url: planPlaceholders[plan.type] || planPlaceholders.basic,
+    solar_panel_image_url: planPlaceholders.panel,
+    inverter_image_url: planPlaceholders.inverter,
+    battery_image_url: planPlaceholders.battery,
+  }));
+  const [managedPlans, setManagedPlans] = useState(seededPlans);
+
+  useEffect(() => {
+    api.get('/plans')
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length) {
+          setManagedPlans(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="pt-20">
       <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
@@ -48,12 +73,19 @@ export default function Services() {
           </motion.div>
 
           <div className="grid lg:grid-cols-3 gap-8 mb-20">
-            {plans.map(({ type, name, price, desc, features, popular }, i) => (
-              <motion.div key={type} className={`relative bg-white rounded-3xl p-8 shadow-lg ${popular ? 'ring-2 ring-primary-500 scale-105' : ''}`} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+            {managedPlans.map(({ id, type, name, price, desc, description, features, popular, image_url, solar_panel_image_url, inverter_image_url, battery_image_url }, i) => (
+              <motion.div key={id || type} className={`relative overflow-hidden bg-white rounded-3xl shadow-lg ${popular ? 'ring-2 ring-primary-500 scale-105' : ''}`} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 {popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-500 text-white text-sm font-medium rounded-full">Most Popular</div>}
+                <PlanImage src={image_url} alt={name} planType={type} className="h-56 w-full" />
+                <div className="p-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{desc}</p>
-                <div className="text-3xl font-bold text-primary-700 mb-6">{price}</div>
+                <p className="text-gray-600 text-sm mb-4">{description || desc}</p>
+                <div className="text-3xl font-bold text-primary-700 mb-6">{typeof price === 'number' ? `Rs ${price.toLocaleString()}` : price}</div>
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <PlanImage src={solar_panel_image_url} alt={`${name} panel`} type="panel" planType={type} className="h-20 rounded-2xl" />
+                  <PlanImage src={inverter_image_url} alt={`${name} inverter`} type="inverter" planType={type} className="h-20 rounded-2xl" />
+                  <PlanImage src={battery_image_url} alt={`${name} battery`} type="battery" planType={type} className="h-20 rounded-2xl" />
+                </div>
                 <ul className="space-y-3 mb-8">
                   {features.map(f => (
                     <li key={f} className="flex items-center text-sm text-gray-600">
@@ -64,6 +96,7 @@ export default function Services() {
                 <Link to="/quote-request" className={`block w-full py-3 text-center font-medium rounded-xl transition-all ${popular ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-primary-50 text-primary-700 hover:bg-primary-100'}`}>
                   Get Quote
                 </Link>
+                </div>
               </motion.div>
             ))}
           </div>

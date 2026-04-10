@@ -1,18 +1,46 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { normalizeRole } from '../utils/roles';
 
 const AuthContext = createContext(null);
+
+const getStorageItem = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const setStorageItem = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
+const removeStorageItem = (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getStorageItem('token');
     if (token) {
       api.get('/users/profile')
-        .then(res => setUser(res.data))
-        .catch(() => localStorage.removeItem('token'))
+        .then((res) => {
+          const nextUser = { ...res.data, role: normalizeRole(res.data?.role) };
+          setUser(nextUser);
+          setStorageItem('user', JSON.stringify(nextUser));
+        })
+        .catch(() => {
+          removeStorageItem('token');
+          removeStorageItem('user');
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -21,18 +49,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/users/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
+    setStorageItem('token', res.data.token);
+    const nextUser = { ...res.data.user, role: normalizeRole(res.data.user?.role) };
+    setStorageItem('user', JSON.stringify(nextUser));
+    setUser(nextUser);
+    return { ...res.data, user: nextUser };
   };
 
   const register = async (data) => {
-    const res = await api.post('/users/register', data);
+    const res = await api.post('/users/register', { role: 'client', ...data });
     return res.data;
   };
 
   const logout = () => {
-    localStorage.remove('token');
+    removeStorageItem('token');
+    removeStorageItem('user');
     setUser(null);
   };
 

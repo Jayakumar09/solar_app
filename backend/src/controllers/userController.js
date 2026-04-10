@@ -4,11 +4,11 @@ import { query } from '../config/database.js';
 
 export const register = async (req, res, next) => {
   try {
-    const { email, password, name, phone } = req.body;
+    const { email, password, name, phone, city = null, role = 'client' } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await query(
-      'INSERT INTO users (email, password, name, phone) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
-      [email, hashedPassword, name, phone]
+      'INSERT INTO users (email, password, name, phone, city, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, name, role',
+      [email, hashedPassword, name, phone, city, role === 'customer' ? 'client' : role]
     );
     res.status(201).json({ message: 'User registered successfully', user: result.rows[0] });
   } catch (error) {

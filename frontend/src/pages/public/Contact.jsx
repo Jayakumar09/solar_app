@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
+import { officeContact } from '../../config/siteContent';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -72,7 +73,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Office Address</h3>
-                    <p className="text-gray-600 text-sm">Green Hybrid Power Pvt. Ltd., 123, Solar Tower, Andheri West, Mumbai - 400053, Maharashtra</p>
+                    <p className="text-gray-600 text-sm">{officeContact.fullAddress}</p>
                   </div>
                 </div>
               </div>
@@ -84,7 +85,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Phone</h3>
-                    <p className="text-gray-600 text-sm">+91 98765 43210<br/>+91 98765 43211</p>
+                    <p className="text-gray-600 text-sm">{officeContact.phone}</p>
                   </div>
                 </div>
               </div>
@@ -96,7 +97,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
-                    <p className="text-gray-600 text-sm">info@greenhybridpower.in<br/>sales@greenhybridpower.in</p>
+                    <p className="text-gray-600 text-sm">{officeContact.email}</p>
                   </div>
                 </div>
               </div>
