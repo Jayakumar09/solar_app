@@ -5,10 +5,38 @@ import { query } from './config/database.js';
 
 const app = express();
 
+const allowedOrigins = [
+  'https://greenhybridpower.in',
+  'https://www.greenhybridpower.in'
+];
+
 app.use(cors({
-  origin: '*',
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.options('*', cors());
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://greenhybridpower.in");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
 
 app.use(express.json());
 
