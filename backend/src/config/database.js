@@ -4,10 +4,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
+const dbUrl = process.env.DATABASE_URL;
+console.log("DB URL:", dbUrl);
+console.log("DB Port:", dbUrl.includes(':6543') ? '6543 (pooler)' : dbUrl.includes(':5432') ? '5432 (direct)' : 'unknown');
+
 const { Pool } = pg;
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
