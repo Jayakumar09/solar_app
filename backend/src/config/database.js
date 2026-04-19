@@ -24,7 +24,7 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-export const query = async (text, params) => {
+const query = async (text, params) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
@@ -37,4 +37,4 @@ export const query = async (text, params) => {
   }
 };
 
-export default pool;
+export { pool, query };
