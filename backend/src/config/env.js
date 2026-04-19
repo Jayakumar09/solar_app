@@ -1,23 +1,21 @@
-import { readFileSync, existsSync } from 'fs';
+import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-const backendDir = process.cwd();
-const envPath = path.resolve(backendDir, '.env');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-if (!existsSync(envPath)) {
-  throw new Error(`.env not found at ${envPath}. Copy .env.example to .env and update DATABASE_URL.`);
-}
+dotenv.config();
 
-const envContent = readFileSync(envPath, 'utf-8');
-const lines = envContent.split('\n');
-for (const line of lines) {
-  const trimmed = line.trim();
-  if (trimmed && !trimmed.startsWith('#')) {
-    const [key, ...valueParts] = trimmed.split('=');
-    process.env[key.trim()] = valueParts.join('=').trim();
-  }
-}
+export const config = {
+  databaseUrl: process.env.DATABASE_URL,
+  jwtSecret: process.env.JWT_SECRET || 'fallback_secret_change_in_production',
+  nodeEnv: process.env.NODE_ENV || 'development',
+  port: process.env.PORT || 5000,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
+};
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in .env");
+if (!config.databaseUrl) {
+  console.warn('DATABASE_URL not set. Set environment variable in production.');
 }
