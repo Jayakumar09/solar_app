@@ -4,7 +4,13 @@ node_modules/
 # Environment files
 # Development: Copy .env.example to .env.development
 # Production: Set VITE_API_URL in build command or CI/CD
+.env
+.env.development
+.env.production
 !.env.example
+
+# Backend env (contains secrets)
+backend/.env
 
 # Logs
 *.log
@@ -18,10 +24,10 @@ Thumbs.db
 dist/
 build/
 
-# Archive (keep folder, not contents)
+# Archive (folder only)
 _archive/
 
-# History files
+# History
 .history/
 
 # Test files
@@ -30,5 +36,5 @@ test-*.json
 # Uploads config
 nul.terabox.uploading.cfg
 
-# Root lock file (use package-lock from each project)
+# Root package-lock (use project-level)
 package-lock.json
