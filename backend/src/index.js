@@ -5,22 +5,9 @@ import { query } from './config/database.js';
 
 const app = express();
 
-const allowedOrigins = [
-  'https://greenhybridpower.in',
-  'https://www.greenhybridpower.in'
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed'));
-    }
-  },
+  origin: 'https://greenhybridpower.in',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.options('*', cors());
@@ -32,7 +19,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
 
   next();
@@ -58,6 +45,5 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT || 5000}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
