@@ -33,6 +33,7 @@ const corsOrigins = [
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'https://solar-app.pages.dev',
+  'https://solar-app-5l4i.onrender.com',
   'https://greenhybridpower.in',
   frontendUrl
 ].filter(Boolean);
