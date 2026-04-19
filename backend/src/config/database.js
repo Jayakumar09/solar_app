@@ -1,7 +1,12 @@
 import pg from 'pg';
-import './env.js';
 
-export const pool = new pg.Pool({
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
+
+const { Pool } = pg;
+
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
@@ -23,3 +28,5 @@ export const query = async (text, params) => {
     throw error;
   }
 };
+
+export default pool;

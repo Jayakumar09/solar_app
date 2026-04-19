@@ -11,6 +11,8 @@ node_modules/
 
 # Backend env (contains secrets)
 backend/.env
+backend/.env.development
+backend/.env.production
 
 # Logs
 *.log
