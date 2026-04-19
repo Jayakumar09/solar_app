@@ -1,5 +1,34 @@
+# Dependencies
 node_modules/
+
+# Environment files
 .env
-.env.example
+.env.*
+!.env.example
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+
+# Archive (keep folder, not contents)
+_archive/
+
+# History files
+.history/
+
+# Test files
+test-*.json
+
+# Uploads config
+nul.terabox.uploading.cfg
+
+# Root lock file (use package-lock from each project)
+package-lock.json
