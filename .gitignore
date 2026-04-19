@@ -2,8 +2,8 @@
 node_modules/
 
 # Environment files
-.env
-.env.*
+# Development: Copy .env.example to .env.development
+# Production: Set VITE_API_URL in build command or CI/CD
 !.env.example
 
 # Logs
