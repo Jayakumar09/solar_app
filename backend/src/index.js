@@ -6,7 +6,7 @@ import { query } from './config/database.js';
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://greenhybridpower.in', 'https://solar-app.pages.dev'],
+  origin: '*',
   credentials: true
 }));
 
