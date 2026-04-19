@@ -2,6 +2,8 @@
 
 A production-ready, investor-grade web application for Green Hybrid Power - a renewable energy startup offering rooftop solar systems, hybrid solar + wind solutions, battery backup, AMC services, and smart monitoring.
 
+> **Note**: Legacy folders (`server/` and `client/`) from the old codebase have been archived to `_archive/`. Only `frontend/` and `backend/` are actively maintained.
+
 ## Features
 
 - **Public Pages**: Home, About, Vision/Mission, Services, Why Choose Us, FAQ, Testimonials, Contact, Book Inspection, Quote Request

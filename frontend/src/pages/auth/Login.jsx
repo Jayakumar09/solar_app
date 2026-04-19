@@ -69,13 +69,6 @@ export default function Login() {
           <div className="mt-6 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/register" className="text-primary-600 font-medium hover:text-primary-700">Register</Link>
           </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl text-xs text-gray-500">
-            <p className="font-medium mb-1">Demo Credentials:</p>
-            <p>Admin: admin@greenhybridpower.in / admin123</p>
-            <p>Client: customer@example.com / user123</p>
-            <p>Vendor: vendor@greenhybridpower.in / user123</p>
-          </div>
         </div>
       </div>
     </div>
