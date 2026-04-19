@@ -6,17 +6,13 @@ if (!process.env.DATABASE_URL) {
 
 console.log("Using DATABASE_URL:", process.env.DATABASE_URL);
 
-if (process.env.DATABASE_URL.includes(":5432") || process.env.DATABASE_URL.includes("db.supabase.co")) {
-  console.warn("WARNING: Using direct DB connection. Use Supabase pooler (port 6543) instead.");
-}
-
 const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' 
-    ? { rejectUnauthorized: true, require: true } 
-    : false
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 pool.on('error', (err) => {
