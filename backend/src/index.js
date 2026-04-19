@@ -1,88 +1,35 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import './config/env.js';
-import { pool, query } from './config/database.js';
-import { initDatabase } from './models/database.js';
-import userRoutes from './routes/userRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
-import leadRoutes from './routes/leadRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-import planRoutes from './routes/planRoutes.js';
-import enquiryRoutes from './routes/enquiryRoutes.js';
-import serviceRoutes from './routes/serviceRoutes.js';
-import contactRoutes from './routes/contactRoutes.js';
-import { errorHandler } from './middleware/errorHandler.js';
-import calculatorRoutes from './routes/calculatorRoutes.js';
-import portalRoutes from './routes/portalRoutes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { query } from './config/database.js';
 
 const app = express();
 
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-const corsOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'https://solar-app.pages.dev',
-  'https://solar-app-5l4i.onrender.com',
-  'https://greenhybridpower.in',
-  frontendUrl
-].filter(Boolean);
-
-app.use(helmet());
 app.use(cors({
-  origin: corsOrigins,
+  origin: ['http://localhost:5173', 'https://greenhybridpower.in', 'https://solar-app.pages.dev'],
   credentials: true
 }));
-app.use(morgan('dev'));
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
-app.use('/api/', limiter);
-
-app.use('/api/users', userRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/plans', planRoutes);
-app.use('/api/enquiries', enquiryRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/calculator', calculatorRoutes);
-app.use('/api/portal', portalRoutes);
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-const start = async () => {
+app.get('/', async (req, res) => {
   try {
-    await initDatabase(pool);
-    console.log('Database initialized');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    const result = await query('SELECT NOW() as now, version() as version');
+    res.json({ status: 'ok', now: result.rows[0].now, version: result.rows[0].version });
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    res.status(500).json({ error: error.message });
   }
-};
+});
 
-start();
+app.get('/api/health', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (error) {
+    res.status(500).json({ status: 'unhealthy', error: error.message });
+  }
+});
+
+app.listen(process.env.PORT || 5000, () => {
+  console.log(`Server running on port ${process.env.PORT || 5000}`);
+});

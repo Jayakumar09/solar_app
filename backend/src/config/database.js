@@ -1,11 +1,5 @@
 import pg from 'pg';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
-}
-
-console.log("Using DATABASE_URL:", process.env.DATABASE_URL);
-
 const { Pool } = pg;
 
 const pool = new Pool({
@@ -17,10 +11,9 @@ const pool = new Pool({
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
 });
 
-const query = async (text, params) => {
+export const query = async (text, params) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
@@ -33,4 +26,4 @@ const query = async (text, params) => {
   }
 };
 
-export { pool, query };
+export { pool };
