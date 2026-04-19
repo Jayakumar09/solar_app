@@ -12,11 +12,11 @@ if (process.env.DATABASE_URL.includes(":5432") || process.env.DATABASE_URL.inclu
 
 const { Pool } = pg;
 
-export const pool = new Pool({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.NODE_ENV === 'production' 
+    ? { rejectUnauthorized: true, require: true } 
+    : false
 });
 
 pool.on('error', (err) => {
