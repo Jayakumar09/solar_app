@@ -1,18 +1,22 @@
 import pg from 'pg';
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+  throw new Error("DATABASE_URL is not set");
 }
 
-const dbUrl = process.env.DATABASE_URL;
-console.log("DB URL:", dbUrl);
-console.log("DB Port:", dbUrl.includes(':6543') ? '6543 (pooler)' : dbUrl.includes(':5432') ? '5432 (direct)' : 'unknown');
+console.log("Using DATABASE_URL:", process.env.DATABASE_URL);
+
+if (process.env.DATABASE_URL.includes(":5432") || process.env.DATABASE_URL.includes("db.supabase.co")) {
+  console.warn("WARNING: Using direct DB connection. Use Supabase pooler (port 6543) instead.");
+}
 
 const { Pool } = pg;
 
 export const pool = new Pool({
-  connectionString: dbUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 pool.on('error', (err) => {
