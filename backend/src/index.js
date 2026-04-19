@@ -27,9 +27,19 @@ const app = express();
 
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+const corsOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'https://solar-app.pages.dev',
+  'https://greenhybridpower.in',
+  frontendUrl
+].filter(Boolean);
+
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'],
+  origin: corsOrigins,
   credentials: true
 }));
 app.use(morgan('dev'));
