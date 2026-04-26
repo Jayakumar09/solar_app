@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BlogCard, BlogCardSkeleton, BlogSidebar, blogCategories } from './components/blogComponents';
+import BlogCard from '../../components/common/BlogCard';
+import RecentPosts from '../../components/common/RecentPosts';
+import SEO from '../../components/common/SEO';
+import { blogCategories } from './components/blogComponents';
 
 const API_ENDPOINT = 'https://solar-app-5l4i.onrender.com/api/blogs?limit=100';
 
@@ -51,10 +54,12 @@ const CategoryPage = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [matchedCount, setMatchedCount] = useState(0);
+  const [error, setError] = useState(false);
   const controllerRef = useRef(null);
 
   const rawSlug = window.location.pathname.split('/').filter(Boolean).pop() || '';
   const slug = normalize(rawSlug);
+  const categoryName = (blogCategories.find(c => normalize(c.slug) === slug)?.name) || (rawSlug ? rawSlug.replace(/-/g,' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Category');
 
   useEffect(() => {
     controllerRef.current?.abort?.();
@@ -87,12 +92,14 @@ const CategoryPage = () => {
         if (!mounted) return;
         setBlogs(matched);
         setMatchedCount(matched.length);
+        setError(false);
       } catch (err) {
         if (err.name === 'AbortError') return;
         console.error('Error fetching blogs:', err);
         if (mounted) {
           setBlogs([]);
           setMatchedCount(0);
+          setError(true);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -110,10 +117,11 @@ const CategoryPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SEO title={`${categoryName} Articles`} />
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">{(blogCategories.find(c => normalize(c.slug) === slug)?.icon) || '📄'}</div>
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            { (blogCategories.find(c => normalize(c.slug) === slug)?.name) || (rawSlug ? rawSlug.replace(/-/g,' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Category') } Blog
+            {categoryName} Blog
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Browse articles in this category.
@@ -141,13 +149,19 @@ const CategoryPage = () => {
             {loading ? (
               <div className="grid md:grid-cols-2 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="p-4 border rounded-lg shadow-sm bg-white animate-pulse">
+                  <div key={i} className="p-4 border rounded-2xl shadow-card bg-white animate-pulse">
                     <div className="h-48 bg-gray-200 rounded mb-4" />
                     <div className="h-4 bg-gray-200 rounded mb-2 w-3/4" />
                     <div className="h-3 bg-gray-200 rounded mb-1 w-1/2" />
                     <div className="h-3 bg-gray-200 rounded w-1/4" />
                   </div>
                 ))}
+              </div>
+            ) : error ? (
+              <div className="col-span-2 text-center py-20">
+                <div className="text-3xl mb-4">⚠️</div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Unable to load posts right now.</h2>
+                <p className="text-gray-600">Please check back later.</p>
               </div>
             ) : blogs.length > 0 ? (
               <>
@@ -173,8 +187,32 @@ const CategoryPage = () => {
             )}
           </main>
 
-          <aside className="lg:col-span-1">
-            <BlogSidebar categories={blogCategories} />
+          <aside className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-2xl shadow-card p-5">
+              <h3 className="font-bold text-lg text-gray-800 mb-4 pb-2 border-b border-gray-100">Categories</h3>
+              <div className="space-y-2">
+                {(blogCategories || []).map(cat => (
+                  <button
+                    key={cat.slug}
+                    onClick={() => navigate(`/blog/category/${cat.slug}`)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-600 hover:bg-primary-50 hover:text-primary-600 transition-colors text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-card p-5">
+              <h3 className="font-bold text-lg text-gray-800 mb-4 pb-2 border-b border-gray-100">Recent Posts</h3>
+              <RecentPosts />
+            </div>
           </aside>
         </div>
       </div>
