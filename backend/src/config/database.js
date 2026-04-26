@@ -4,7 +4,7 @@ const { Pool } = pkg;
 const isProduction = process.env.NODE_ENV === "production";
 
 console.log("🔧 DB ENV:", process.env.NODE_ENV || "undefined");
-console.log("🔧 Using SSL:", isProduction);
+console.log("🔧 Using SSL: true (pooled connection)");
 
 // Parse DATABASE_URL for diagnostics
 let dbUrl = process.env.DATABASE_URL;
@@ -19,17 +19,25 @@ if (dbUrl) {
   }
 }
 
-const pool = new Pool({
+// Ensure sslmode=require is present for connection strings that don't include it
+if (dbUrl && !/sslmode=/.test(dbUrl)) {
+  dbUrl = dbUrl + (dbUrl.includes("?") ? "&" : "?") + "sslmode=require";
+  console.log("🔧 Appended sslmode=require to DATABASE_URL");
+}
+
+const config = {
   connectionString: dbUrl,
-  ssl: isProduction
-    ? {
-        rejectUnauthorized: false,
-        sslmode: "require",
-      }
-    : false,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
-});
+  max: 20,
+};
+
+
+
+const pool = new Pool(config);
 
 pool.on("error", (err) => {
   console.error("Unexpected pool error:", err.message);
