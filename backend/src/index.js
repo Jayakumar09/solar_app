@@ -5,6 +5,7 @@ import { query } from './config/database.js';
 import blogRoutes from './routes/blog.js';
 import sitemapRoutes from './routes/sitemap.js';
 import { createBlogTable } from './models/blog.js';
+import { seedBlogs } from './scripts/seedBlogs.js';
 
 const app = express();
 
@@ -57,8 +58,12 @@ app.listen(PORT, async () => {
   
   try {
     await createBlogTable();
-    console.log('✓ Blog system initialized');
+    console.log('✓ Blog table created/verified');
+    
+    // Auto-seed blogs on startup
+    await seedBlogs();
+    console.log('✓ Blog seeding complete');
   } catch (err) {
-    console.error('✗ Blog table creation failed:', err.message);
+    console.error('✗ Blog system initialization failed:', err.message);
   }
 });
