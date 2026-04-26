@@ -19,7 +19,8 @@ const BlogList = () => {
     setLoading(true);
     try {
       const data = await blogService.getAll(page, 9);
-      setBlogs(Array.isArray(data?.blogs) ? data.blogs : []);
+      console.log('Fetched blogs:', data);
+      setBlogs(data?.blogs || []);
       setPagination({
         page: data?.page || 1,
         totalPages: data?.totalPages || 1,
@@ -89,7 +90,7 @@ const BlogList = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 {blogs.map(blog => (
                   <BlogCard
-                    key={blog.id}
+                    key={blog.id || blog.slug}
                     post={blog}
                     onClick={(slug) => navigate(`/blog/${slug}`)}
                   />
