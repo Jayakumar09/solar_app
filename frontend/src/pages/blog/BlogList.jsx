@@ -85,7 +85,7 @@ const BlogList = () => {
                   <BlogCardSkeleton key={i} />
                 ))}
               </div>
-            ) : blogs.length > 0 ? (
+            ) : Array.isArray(blogs) && blogs.length > 0 ? (
               <div className="grid md:grid-cols-2 gap-6">
                 {blogs.map(blog => (
                   <BlogCard

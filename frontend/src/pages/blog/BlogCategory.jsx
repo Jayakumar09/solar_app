@@ -94,10 +94,10 @@ const BlogCategory = () => {
             ) : blogs.length > 0 ? (
               <>
                 <p className="text-gray-600 mb-6">
-                  Showing {blogs.length} article{pagination.total > 1 ? 's' : ''} in {categoryInfo?.name}
+                  Showing {Array.isArray(blogs) ? blogs.length : 0} article{pagination.total > 1 ? 's' : ''} in {categoryInfo?.name}
                 </p>
                 <div className="grid md:grid-cols-2 gap-6">
-                  {blogs.map(blog => (
+                  {Array.isArray(blogs) && blogs.map(blog => (
                     <BlogCard
                       key={blog.id}
                       post={blog}

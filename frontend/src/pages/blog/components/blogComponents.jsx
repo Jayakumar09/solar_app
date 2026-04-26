@@ -74,7 +74,7 @@ const BlogSidebar = ({ categories, recentPosts = [] }) => {
           Categories
         </h3>
         <div className="space-y-2">
-          {blogCategories.map(cat => (
+          {(blogCategories || []).map(cat => (
             <button
               key={cat.slug}
               onClick={() => navigate(`/blog/category/${cat.slug}`)}
