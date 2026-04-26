@@ -147,7 +147,7 @@ const BlogDetail = () => {
 
                 <div className="mt-10 pt-8 border-t border-gray-100">
                   <div className="flex flex-wrap gap-2">
-                    {blog.tags && blog.tags.map((tag, index) => (
+                    {Array.isArray(blog.tags) && blog.tags.map((tag, index) => (
                       <span 
                         key={index}
                         className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"

@@ -97,7 +97,7 @@ const BlogSidebar = ({ categories, recentPosts = [] }) => {
           Recent Posts
         </h3>
         <div className="space-y-4">
-          {recentPosts.length > 0 ? recentPosts.map(post => (
+          {Array.isArray(recentPosts) && recentPosts.length > 0 ? recentPosts.map(post => (
             <div 
               key={post.id}
               onClick={() => navigate(`/blog/${post.slug}`)}

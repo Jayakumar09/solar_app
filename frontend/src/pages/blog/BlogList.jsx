@@ -19,14 +19,15 @@ const BlogList = () => {
     setLoading(true);
     try {
       const data = await blogService.getAll(page, 9);
-      setBlogs(data.blogs || []);
+      setBlogs(Array.isArray(data?.blogs) ? data.blogs : []);
       setPagination({
-        page: data.page,
-        totalPages: data.totalPages,
-        total: data.total
+        page: data?.page || 1,
+        totalPages: data?.totalPages || 1,
+        total: data?.total || 0
       });
     } catch (error) {
       console.error('Error loading blogs:', error);
+      setBlogs([]);
     } finally {
       setLoading(false);
     }
@@ -35,9 +36,10 @@ const BlogList = () => {
   const loadRecentPosts = async () => {
     try {
       const data = await blogService.getRecent(3);
-      setRecentPosts(data || []);
+      setRecentPosts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading recent posts:', error);
+      setRecentPosts([]);
     }
   };
 

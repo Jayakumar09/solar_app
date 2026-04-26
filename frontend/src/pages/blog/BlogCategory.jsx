@@ -21,17 +21,18 @@ const BlogCategory = () => {
     setLoading(true);
     try {
       const data = await blogService.getByCategory(category, page, 9);
-      setBlogs(data.blogs || []);
+      setBlogs(Array.isArray(data?.blogs) ? data.blogs : []);
       setPagination({
-        page: data.page,
-        totalPages: data.totalPages,
-        total: data.total
+        page: data?.page || 1,
+        totalPages: data?.totalPages || 1,
+        total: data?.total || 0
       });
       
       const catInfo = blogCategories.find(c => c.slug === category);
       setCategoryInfo(catInfo || { name: category, icon: '📄' });
     } catch (error) {
       console.error('Error loading category blogs:', error);
+      setBlogs([]);
     } finally {
       setLoading(false);
     }
