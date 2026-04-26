@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = '/api/blogs';
+const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE)
+  ? String(import.meta.env.VITE_API_BASE).replace(/\/$/, '')
+  : '';
+const API_URL = `${API_BASE}/api/blogs`;
 
 export const blogService = {
   getAll: async (page = 1, limit = 10, category = null) => {
