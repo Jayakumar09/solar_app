@@ -57,10 +57,14 @@ export const getAllBlogs = async (options = {}) => {
   
   let whereClause = 'WHERE status = $1';
   const params = [status];
-  
+
   if (category) {
-    whereClause += ' AND category = $2';
-    params.push(category);
+    // match normalized category slug (e.g. 'solar-cost' matches 'Solar Cost')
+    // also support JSON-array categories stored as text that begin with '['
+    whereClause += " AND (LOWER(REPLACE(category, ' ', '-')) = $2 OR (category LIKE $3 AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(category::jsonb) c WHERE LOWER(REPLACE(c, ' ', '-')) = $2)))";
+    const normalized = category.toLowerCase().trim().replace(/\s+/g, '-');
+    params.push(normalized);
+    params.push('[');
   }
   
   const countResult = await query(
@@ -113,19 +117,22 @@ export const getBlogBySlug = async (slug) => {
 export const getBlogsByCategory = async (category, page = 1, limit = 10) => {
   const offset = (page - 1) * limit;
   
+  // normalize incoming category slug to compare against stored category text
+  const normalized = category.toLowerCase().trim().replace(/\s+/g, '-');
+
   const countResult = await query(
-    'SELECT COUNT(*) FROM blogs WHERE category = $1 AND status = $2',
-    [category, 'published']
+    `SELECT COUNT(*) FROM blogs WHERE (LOWER(REPLACE(category, ' ', '-')) = $1 OR (category LIKE $2 AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(category::jsonb) c WHERE LOWER(REPLACE(c, ' ', '-')) = $1))) AND status = $3`,
+    [normalized, '[', 'published']
   );
-  
+
   const result = await query(
     `SELECT id, title, slug, content, meta_title, meta_description, category, tags, author, 
             featured_image, view_count, created_at
      FROM blogs 
-     WHERE category = $1 AND status = $2
+     WHERE (LOWER(REPLACE(category, ' ', '-')) = $1 OR (category LIKE $2 AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(category::jsonb) c WHERE LOWER(REPLACE(c, ' ', '-')) = $1))) AND status = $3
      ORDER BY created_at DESC 
-     LIMIT $3 OFFSET $4`,
-    [category, 'published', limit, offset]
+     LIMIT $4 OFFSET $5`,
+    [normalized, '[', 'published', limit, offset]
   );
   
   const rows = result.rows.map(r => ({
@@ -188,7 +195,7 @@ export const deleteBlog = async (id) => {
 
 export const getAllCategories = async () => {
   const result = await query(
-    `SELECT category, COUNT(*) as count 
+    `SELECT category, COUNT(*) as count, LOWER(REPLACE(category, ' ', '-')) as slug
      FROM blogs WHERE status = 'published'
      GROUP BY category 
      ORDER BY count DESC`
