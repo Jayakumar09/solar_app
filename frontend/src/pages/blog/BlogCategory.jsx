@@ -67,7 +67,7 @@ const BlogCategory = () => {
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-10">
-          {blogCategories.map(cat => (
+          {(blogCategories || []).map(cat => (
             <button
               key={cat.slug}
               onClick={() => navigate(`/blog/category/${cat.slug}`)}

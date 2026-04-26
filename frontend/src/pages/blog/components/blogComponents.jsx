@@ -17,6 +17,7 @@ const formatDate = (dateString) => {
 };
 
 const BlogCard = ({ post, onClick }) => {
+  if (!post) return null;
   return (
     <article 
       onClick={() => onClick(post.slug)}
