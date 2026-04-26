@@ -10,6 +10,7 @@ const BlogDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tableOfContents, setTableOfContents] = useState([]);
+  const [sanitizedContent, setSanitizedContent] = useState('');
 
   useEffect(() => {
     loadBlog();
@@ -22,7 +23,9 @@ const BlogDetail = () => {
       const data = await blogService.getBySlug(slug);
       if (data) {
         setBlog(data);
-        generateTOC(data.content);
+        const cleaned = sanitizeContent(data.content || '');
+        setSanitizedContent(cleaned);
+        generateTOC(cleaned);
         updateMetaTags(data);
       } else {
         setError('Blog not found');
@@ -62,6 +65,41 @@ const BlogDetail = () => {
       document.head.appendChild(desc);
     }
     desc.content = blog.meta_description || '';
+  };
+
+  const sanitizeContent = (content) => {
+    if (!content) return '';
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+
+      // Remove or replace unsafe iframe embeds (e.g., Google) to avoid CSP/frame-ancestors issues
+      const iframes = Array.from(doc.querySelectorAll('iframe'));
+      iframes.forEach(iframe => {
+        const src = iframe.getAttribute('src') || '';
+        // If iframe src contains google.com or another external host, replace with a link
+        if (/google\.com/.test(src) || /googlesyndication\.com/.test(src) || /doubleclick\.net/.test(src)) {
+          const a = doc.createElement('a');
+          a.href = src || '#';
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = 'Open embedded content (external)';
+          iframe.replaceWith(a);
+        } else {
+          // For any other iframe, remove it to be safe
+          iframe.remove();
+        }
+      });
+
+      // Remove all script tags for safety
+      const scripts = Array.from(doc.querySelectorAll('script'));
+      scripts.forEach(s => s.remove());
+
+      return doc.body.innerHTML;
+    } catch (e) {
+      console.error('Error sanitizing content:', e);
+      return content;
+    }
   };
 
   const scrollToSection = (id) => {
@@ -142,7 +180,7 @@ const BlogDetail = () => {
 
                 <div 
                   className="prose prose-lg max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-p:text-gray-600 prose-p:leading-relaxed prose-ul:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800"
-                  dangerouslySetInnerHTML={{ __html: blog.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedContent || blog.content }}
                 />
 
                 <div className="mt-10 pt-8 border-t border-gray-100">
