@@ -3,9 +3,28 @@ const { Pool } = pkg;
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Parse DATABASE_URL for diagnostics (without modifying)
+const getDbInfo = () => {
+  try {
+    const url = new URL(process.env.DATABASE_URL || "");
+    return {
+      host: url.hostname,
+      port: url.port,
+      database: url.pathname.replace("/", ""),
+      user: url.username,
+    };
+  } catch (e) {
+    return { error: e.message };
+  }
+};
+
+const dbInfo = getDbInfo();
 console.log("🔧 DB ENV:", process.env.NODE_ENV || "undefined");
 console.log("🔧 Using SSL:", isProduction);
-console.log("🔧 DATABASE_URL:", process.env.DATABASE_URL ? "SET" : "NOT SET");
+console.log("🔧 DB Host:", dbInfo.host || "NOT SET");
+console.log("🔧 DB Port:", dbInfo.port || "5432");
+console.log("🔧 DB Name:", dbInfo.database || "postgres");
+console.log("🔧 DB User:", dbInfo.user || "unknown");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
