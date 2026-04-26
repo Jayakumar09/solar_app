@@ -3,48 +3,65 @@ const { Pool } = pkg;
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// Parse DATABASE_URL for diagnostics (without modifying)
-const getDbInfo = () => {
-  try {
-    const url = new URL(process.env.DATABASE_URL || "");
-    return {
-      host: url.hostname,
-      port: url.port,
-      database: url.pathname.replace("/", ""),
-      user: url.username,
-    };
-  } catch (e) {
-    return { error: e.message };
-  }
-};
-
-const dbInfo = getDbInfo();
 console.log("🔧 DB ENV:", process.env.NODE_ENV || "undefined");
 console.log("🔧 Using SSL:", isProduction);
-console.log("🔧 DB Host:", dbInfo.host || "NOT SET");
-console.log("🔧 DB Port:", dbInfo.port || "5432");
-console.log("🔧 DB Name:", dbInfo.database || "postgres");
-console.log("🔧 DB User:", dbInfo.user || "unknown");
+
+// Parse DATABASE_URL for diagnostics
+let dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  try {
+    const url = new URL(dbUrl);
+    console.log("🔧 DB Host:", url.hostname);
+    console.log("🔧 DB Port:", url.port || "5432");
+    console.log("🔧 DB Path:", url.pathname);
+  } catch (e) {
+    console.log("🔧 DB URL parse error:", e.message);
+  }
+}
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: isProduction
     ? {
         rejectUnauthorized: false,
+        sslmode: "require",
       }
     : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
 });
 
-pool.query("SELECT NOW()")
-  .then(() => console.log("✅ Database connected successfully"))
-  .catch(err => console.error("❌ Database connection failed:", err.message));
+pool.on("error", (err) => {
+  console.error("Unexpected pool error:", err.message);
+});
+
+// Test connection with retry
+const testConnection = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await pool.query("SELECT NOW()");
+      console.log("✅ Database connected successfully");
+      return true;
+    } catch (err) {
+      console.error(`❌ Connection attempt ${i + 1} failed:`, err.message);
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+  console.error("❌ Database connection failed after retries");
+  return false;
+};
+
+// Run initial test
+setTimeout(() => testConnection(), 1000);
 
 export const query = async (text, params) => {
   try {
     const result = await pool.query(text, params);
     return result;
   } catch (err) {
-    console.error("Database error:", err.message);
+    console.error("Database query error:", err.message);
     throw err;
   }
 };

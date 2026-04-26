@@ -56,11 +56,14 @@ app.get('/api/health', async (req, res) => {
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
+  // Wait for DB connection
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
   try {
     await createBlogTable();
     console.log('✓ Blog table created/verified');
     
-    // Auto-seed blogs on startup
+    // Auto-seed blogs
     await seedBlogs();
     console.log('✓ Blog seeding complete');
   } catch (err) {
