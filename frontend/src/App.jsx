@@ -18,7 +18,7 @@ import Disclaimer from './pages/public/Disclaimer';
 
 import BlogList from './pages/blog/BlogList';
 import BlogDetail from './pages/blog/BlogDetail';
-import BlogCategory from './pages/blog/BlogCategory';
+import CategoryPage from './pages/blog/CategoryPage';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -79,7 +79,7 @@ function App() {
         <Route path="disclaimer" element={<Disclaimer />} />
         <Route path="blog" element={<BlogList />} />
         <Route path="blog/:slug" element={<BlogDetail />} />
-        <Route path="blog/category/:category" element={<BlogCategory />} />
+        <Route path="blog/category/:category" element={<CategoryPage />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
       </Route>
