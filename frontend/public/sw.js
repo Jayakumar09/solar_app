@@ -1,4 +1,5 @@
-const CACHE_NAME = 'ghp-v2';
+// Use a timestamp-based cache name so new deployments create a new cache
+const CACHE_NAME = 'ghp-v-' + (new Date().getTime());
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_ASSETS = [

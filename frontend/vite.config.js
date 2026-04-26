@@ -21,4 +21,15 @@ export default defineConfig({
   preview: {
     port: 5173,
   },
+  build: {
+    manifest: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
+    }
+  }
 });

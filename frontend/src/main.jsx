@@ -19,8 +19,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').then((registration) => {
+    window.addEventListener('load', async () => {
+      try {
+        // Unregister any existing service workers first to avoid stale cache issues
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+
+        const registration = await navigator.serviceWorker.register('/sw.js');
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
@@ -29,7 +34,10 @@ if ('serviceWorker' in navigator) {
             }
           });
         });
-      }).catch(() => {});
+      } catch (e) {
+        // swallow errors - SW is best-effort
+        console.warn('Service worker registration failed:', e);
+      }
     });
   } else {
     navigator.serviceWorker.getRegistrations().then((regs) => {
