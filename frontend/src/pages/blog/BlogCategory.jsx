@@ -18,6 +18,8 @@ const BlogCategory = () => {
     }
   }, [category]);
 
+  const normalize = (s = '') => String(s || '').toLowerCase().trim().replace(/\s+/g, '-');
+
   const loadCategoryBlogs = async (page) => {
     // increment request id to identify this fetch
     const reqId = ++requestIdRef.current;
@@ -25,6 +27,7 @@ const BlogCategory = () => {
     try {
       console.debug(`Loading category '${category}' page ${page} (req=${reqId})`);
       const data = await blogService.getByCategory(category, page, 9);
+
 
       // log response for debugging
       console.debug(`Received category response (req=${reqId})`, {
@@ -35,6 +38,15 @@ const BlogCategory = () => {
         blogsLength: Array.isArray(data?.blogs) ? data.blogs.length : 0
       });
 
+      // Debug: log incoming slug and categories on posts
+      console.log('slug:', category);
+      const incomingPosts = Array.isArray(data?.blogs) ? data.blogs : [];
+      console.log('categories:', incomingPosts.map(p => p.category));
+
+      // Normalize category names and defensively filter posts client-side
+      const filteredPosts = incomingPosts.filter(post => normalize(post.category) === normalize(category));
+      console.debug(`Filtered posts count: ${filteredPosts.length} (from ${incomingPosts.length})`);
+
       // if a newer request started, ignore this response
       if (reqId !== requestIdRef.current) {
         console.debug(`Ignoring stale response for req=${reqId} (current=${requestIdRef.current})`);
@@ -42,7 +54,7 @@ const BlogCategory = () => {
       }
 
       // only update state if this is the latest response
-      const newBlogs = Array.isArray(data?.blogs) ? data.blogs : [];
+      const newBlogs = filteredPosts;
       setBlogs(newBlogs);
       setPagination({
         page: data?.page || 1,
