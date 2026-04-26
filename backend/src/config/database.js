@@ -6,28 +6,37 @@ const isProduction = process.env.NODE_ENV === 'production';
 console.log('🔧 DB ENV:', process.env.NODE_ENV || 'undefined');
 console.log('🔧 Using SSL:', isProduction);
 
-// Parse DATABASE_URL to check existing SSL config
-const dbUrl = process.env.DATABASE_URL;
-if (dbUrl) {
+// Parse DATABASE_URL to check and modify SSL config
+let dbUrl = process.env.DATABASE_URL;
+if (dbUrl && isProduction) {
   try {
     const url = new URL(dbUrl);
     console.log('🔧 DB Host:', url.hostname);
-    console.log('🔧 DB SSL in URL:', url.searchParams.get('sslmode'));
+    const currentMode = url.searchParams.get('sslmode');
+    console.log('🔧 Current SSL mode in URL:', currentMode);
+    
+    // Remove any existing sslmode and add our own
+    url.searchParams.set('sslmode', 'require');
+    dbUrl = url.toString();
+    console.log('🔧 Updated DATABASE_URL with sslmode=require');
   } catch (e) {
     console.log('🔧 DB URL parse error:', e.message);
   }
 }
 
-// Force override SSL settings for production
-const pool = new Pool({
+const poolConfig = {
   connectionString: dbUrl,
-  ssl: isProduction
-    ? {
-        rejectUnauthorized: false,
-        sslmode: 'require',
-      }
-    : false,
-});
+};
+
+if (isProduction) {
+  poolConfig.ssl = {
+    rejectUnauthorized: false,
+  };
+}
+
+console.log('🔧 Pool SSL config:', poolConfig.ssl);
+
+const pool = new Pool(poolConfig);
 
 export const query = async (text, params) => {
   try {
