@@ -10,7 +10,7 @@ export const createBlogTable = async () => {
       meta_title VARCHAR(500),
       meta_description TEXT,
       category VARCHAR(100) NOT NULL,
-      tags TEXT[] DEFAULT '{}',
+      tags TEXT DEFAULT '[]',
       author VARCHAR(255) DEFAULT 'Green Hybrid Power',
       featured_image VARCHAR(1000),
       status VARCHAR(20) DEFAULT 'published',
