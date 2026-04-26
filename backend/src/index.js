@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import './config/env.js';
-import { query, testConnection } from './config/database.js';
+import { query } from './config/database.js';
 import blogRoutes from './routes/blog.js';
 import sitemapRoutes from './routes/sitemap.js';
 import { createBlogTable } from './models/blog.js';
@@ -54,11 +54,6 @@ app.get('/api/health', async (req, res) => {
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
-  
-  const dbConnected = await testConnection();
-  if (!dbConnected) {
-    console.error('WARNING: Database connection failed. Some features may not work.');
-  }
   
   try {
     await createBlogTable();
