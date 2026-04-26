@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { blogService } from '../../services/blogService';
 import { BlogCard, BlogCardSkeleton, BlogSidebar, blogCategories, formatDate } from './components/blogComponents';
@@ -10,6 +10,7 @@ const BlogCategory = () => {
   const [loading, setLoading] = useState(true);
   const [categoryInfo, setCategoryInfo] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (category) {
@@ -18,23 +19,50 @@ const BlogCategory = () => {
   }, [category]);
 
   const loadCategoryBlogs = async (page) => {
+    // increment request id to identify this fetch
+    const reqId = ++requestIdRef.current;
     setLoading(true);
     try {
+      console.debug(`Loading category '${category}' page ${page} (req=${reqId})`);
       const data = await blogService.getByCategory(category, page, 9);
-      setBlogs(Array.isArray(data?.blogs) ? data.blogs : []);
+
+      // log response for debugging
+      console.debug(`Received category response (req=${reqId})`, {
+        category,
+        page: data?.page,
+        totalPages: data?.totalPages,
+        total: data?.total,
+        blogsLength: Array.isArray(data?.blogs) ? data.blogs.length : 0
+      });
+
+      // if a newer request started, ignore this response
+      if (reqId !== requestIdRef.current) {
+        console.debug(`Ignoring stale response for req=${reqId} (current=${requestIdRef.current})`);
+        return;
+      }
+
+      // only update state if this is the latest response
+      const newBlogs = Array.isArray(data?.blogs) ? data.blogs : [];
+      setBlogs(newBlogs);
       setPagination({
         page: data?.page || 1,
         totalPages: data?.totalPages || 1,
         total: data?.total || 0
       });
-      
+
       const catInfo = blogCategories.find(c => c.slug === category);
       setCategoryInfo(catInfo || { name: category, icon: '📄' });
     } catch (error) {
-      console.error('Error loading category blogs:', error);
-      setBlogs([]);
+      // if error happens and this is the latest request, surface it; otherwise ignore
+      if (reqId === requestIdRef.current) {
+        console.error('Error loading category blogs:', error);
+        setBlogs([]);
+      } else {
+        console.debug('Ignored error from stale request', { reqId, current: requestIdRef.current, error });
+      }
     } finally {
-      setLoading(false);
+      // only clear loading when this request is the latest
+      if (reqId === requestIdRef.current) setLoading(false);
     }
   };
 
