@@ -1,5 +1,22 @@
 import { query } from '../config/database.js';
 
+const normalizeTags = (tags) => {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags;
+  if (typeof tags === 'string') {
+    // Try JSON parse first (string stored as '[]' or JSON array)
+    try {
+      const parsed = JSON.parse(tags);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      // ignore JSON parse errors
+    }
+    // Fallback: comma-separated string
+    return tags.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 export const createBlogTable = async () => {
   const createTableSQL = `
     CREATE TABLE IF NOT EXISTS blogs (
@@ -60,8 +77,13 @@ export const getAllBlogs = async (options = {}) => {
     [...params, limit, offset]
   );
   
+  const rows = result.rows.map(r => ({
+    ...r,
+    tags: normalizeTags(r.tags)
+  }));
+
   return {
-    blogs: result.rows,
+    blogs: rows,
     total: parseInt(countResult.rows[0].count),
     page,
     limit,
@@ -82,7 +104,10 @@ export const getBlogBySlug = async (slug) => {
     );
   }
   
-  return result.rows[0];
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  row.tags = normalizeTags(row.tags);
+  return row;
 };
 
 export const getBlogsByCategory = async (category, page = 1, limit = 10) => {
@@ -103,8 +128,13 @@ export const getBlogsByCategory = async (category, page = 1, limit = 10) => {
     [category, 'published', limit, offset]
   );
   
+  const rows = result.rows.map(r => ({
+    ...r,
+    tags: normalizeTags(r.tags)
+  }));
+
   return {
-    blogs: result.rows,
+    blogs: rows,
     total: parseInt(countResult.rows[0].count),
     page,
     limit,
