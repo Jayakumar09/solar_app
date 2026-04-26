@@ -32,8 +32,14 @@ router.get('/slug/:slug', async (req, res) => {
 router.get('/category/:category', async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
+    // Accept both display-name and slug (e.g. 'Solar Guide' or 'solar-guide')
+    const rawCat = req.params.category || '';
+    let categoryName = rawCat;
+    if (rawCat.includes('-')) {
+      categoryName = rawCat.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    }
     const result = await Blog.getBlogsByCategory(
-      req.params.category,
+      categoryName,
       parseInt(page),
       parseInt(limit)
     );
