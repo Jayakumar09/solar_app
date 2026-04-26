@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import './config/env.js';
 import { query } from './config/database.js';
+import blogRoutes from './routes/blog.js';
+import sitemapRoutes from './routes/sitemap.js';
+import { createBlogTable } from './models/blog.js';
 
 const app = express();
 
@@ -28,6 +31,9 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use('/api/blogs', blogRoutes);
+app.use('/api', sitemapRoutes);
+
 app.get('/', async (req, res) => {
   try {
     const result = await query('SELECT NOW() as now, version() as version');
@@ -46,4 +52,12 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Server running on ${PORT}`);
+  try {
+    await createBlogTable();
+    console.log('Blog system initialized');
+  } catch (err) {
+    console.log('Blog table creation skipped:', err.message);
+  }
+});

@@ -18,6 +18,7 @@ export default function PublicNavbar() {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/solar-calculator', label: 'Calculator' },
+    { to: '/blog', label: 'Blog' },
     { to: '/about', label: 'About' },
     { to: '/services', label: 'Services' },
     { to: '/vision', label: 'Vision' },

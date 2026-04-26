@@ -38,7 +38,7 @@ export default function PublicFooter() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} viewport={{ once: true }}>
             <h3 className="text-white font-bold mb-5 text-lg">Quick Links</h3>
             <ul className="space-y-3">
-              {[['/', 'Home'], ['/about', 'About Us'], ['/services', 'Services'], ['/vision', 'Vision & Mission'], ['/why-choose-us', 'Why Choose Us'], ['/contact', 'Contact']].map(([to, label]) => (
+              {[['/', 'Home'], ['/about', 'About Us'], ['/services', 'Services'], ['/vision', 'Vision & Mission'], ['/why-choose-us', 'Why Choose Us'], ['/contact', 'Contact'], ['/disclaimer', 'Disclaimer']].map(([to, label]) => (
                 <li key={to}><Link to={to} className="hover:text-amber-400 transition-colors flex items-center gap-2"><Zap className="w-3 h-3 text-primary-500" /> {label}</Link></li>
               ))}
             </ul>

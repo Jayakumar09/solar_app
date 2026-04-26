@@ -14,6 +14,11 @@ import Testimonials from './pages/public/Testimonials';
 import BookInspection from './pages/public/BookInspection';
 import QuoteRequest from './pages/public/QuoteRequest';
 import SolarCalculator from './pages/public/SolarCalculator';
+import Disclaimer from './pages/public/Disclaimer';
+
+import BlogList from './pages/blog/BlogList';
+import BlogDetail from './pages/blog/BlogDetail';
+import BlogCategory from './pages/blog/BlogCategory';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -71,6 +76,10 @@ function App() {
         <Route path="book-inspection" element={<BookInspection />} />
         <Route path="quote-request" element={<QuoteRequest />} />
         <Route path="solar-calculator" element={<SolarCalculator />} />
+        <Route path="disclaimer" element={<Disclaimer />} />
+        <Route path="blog" element={<BlogList />} />
+        <Route path="blog/:slug" element={<BlogDetail />} />
+        <Route path="blog/category/:category" element={<BlogCategory />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
       </Route>
