@@ -5,42 +5,20 @@ const isProduction = process.env.NODE_ENV === "production";
 
 console.log("🔧 DB ENV:", process.env.NODE_ENV || "undefined");
 console.log("🔧 Using SSL:", isProduction);
-
-// Parse and modify DATABASE_URL to ensure SSL mode
-let dbUrl = process.env.DATABASE_URL;
-if (dbUrl) {
-  try {
-    const url = new URL(dbUrl);
-    console.log("🔧 DB Host:", url.hostname);
-    console.log("🔧 DB User:", url.username);
-    
-    // Force sslmode=require in production
-    if (isProduction) {
-      url.searchParams.set("sslmode", "require");
-      dbUrl = url.toString();
-      console.log("🔧 Modified URL with sslmode=require");
-    }
-  } catch (e) {
-    console.error("🔧 DB URL parse error:", e.message);
-  }
-}
-
-console.log("🔧 DATABASE_URL:", dbUrl ? dbUrl.substring(0, 50) + "..." : "NOT SET");
+console.log("🔧 DATABASE_URL:", process.env.DATABASE_URL ? "SET" : "NOT SET");
 
 const pool = new Pool({
-  connectionString: dbUrl,
+  connectionString: process.env.DATABASE_URL,
   ssl: isProduction
     ? {
         rejectUnauthorized: false,
-        sslmode: "require",
       }
     : false,
 });
 
-// Test connection
 pool.query("SELECT NOW()")
   .then(() => console.log("✅ Database connected successfully"))
-  .catch((err) => console.error("❌ Database connection failed:", err.message));
+  .catch(err => console.error("❌ Database connection failed:", err.message));
 
 export const query = async (text, params) => {
   try {
