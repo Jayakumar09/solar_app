@@ -24,6 +24,11 @@ if (dbUrl && !/sslmode=/.test(dbUrl)) {
   dbUrl = dbUrl + (dbUrl.includes("?") ? "&" : "?") + "sslmode=require";
   console.log("🔧 Appended sslmode=require to DATABASE_URL");
 }
+// If sslmode=require is present, add uselibpqcompat=true to get libpq-compatible 'require' behavior
+if (dbUrl && /sslmode=require/.test(dbUrl) && !/uselibpqcompat=/.test(dbUrl)) {
+  dbUrl = dbUrl + (dbUrl.includes("?") ? "&" : "?") + "uselibpqcompat=true";
+  console.log("🔧 Appended uselibpqcompat=true to DATABASE_URL for libpq compatibility");
+}
 
 const config = {
   connectionString: dbUrl,
