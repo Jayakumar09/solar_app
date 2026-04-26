@@ -4,7 +4,7 @@ import './config/env.js';
 import { query } from './config/database.js';
 import blogRoutes from './routes/blog.js';
 import sitemapRoutes from './routes/sitemap.js';
-import { createBlogTable } from './models/blog.js';
+import { createBlogTable, getBlogCount } from './models/blog.js';
 import { seedBlogs } from './scripts/seedBlogs.js';
 
 const app = express();
@@ -61,11 +61,19 @@ app.listen(PORT, async () => {
   
   try {
     await createBlogTable();
-    console.log('✓ Blog table created/verified');
     
-    // Auto-seed blogs
-    await seedBlogs();
-    console.log('✓ Blog seeding complete');
+    // Check if blogs exist, seed if empty
+    const count = await getBlogCount();
+    console.log(`📊 Current blog count: ${count}`);
+    
+    if (count === 0) {
+      console.log('📝 No blogs found. Starting seed...');
+      await seedBlogs();
+      const newCount = await getBlogCount();
+      console.log(`✅ Seeding complete! Total blogs: ${newCount}`);
+    } else {
+      console.log(`✅ Blog system ready with ${count} existing posts`);
+    }
   } catch (err) {
     console.error('✗ Blog system initialization failed:', err.message);
   }

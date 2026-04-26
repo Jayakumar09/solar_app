@@ -29,6 +29,11 @@ export const createBlogTable = async () => {
   console.log('✓ Blogs table created/verified');
 };
 
+export const getBlogCount = async () => {
+  const result = await query('SELECT COUNT(*) as count FROM blogs');
+  return parseInt(result.rows[0].count);
+};
+
 export const getAllBlogs = async (options = {}) => {
   const { page = 1, limit = 10, category, status = 'published' } = options;
   const offset = (page - 1) * limit;
