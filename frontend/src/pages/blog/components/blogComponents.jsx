@@ -26,7 +26,8 @@ const BlogCard = ({ post, onClick }) => {
       <div className="relative h-48 overflow-hidden">
         <img 
           src={post.featured_image || 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&q=80'} 
-          alt={post.title}
+          alt={post.title || 'Blog image'}
+          loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -106,7 +107,8 @@ const BlogSidebar = ({ categories, recentPosts = [] }) => {
               <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
                 <img 
                   src={post.featured_image || 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=200&q=80'} 
-                  alt=""
+                  alt={post.title || 'Post thumbnail'}
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                 />
               </div>

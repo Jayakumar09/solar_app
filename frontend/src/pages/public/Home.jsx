@@ -532,11 +532,11 @@ export default function Home() {
               </div>
               <p className="text-gray-400 text-lg leading-relaxed mb-6 font-light">India&apos;s leading solar energy company providing premium solar solutions with smart SISFS financing. Join 500+ happy customers saving on electricity bills.</p>
               <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Facebook className="w-5 h-5" /></a>
-                <a href="#" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Twitter className="w-5 h-5" /></a>
-                <a href="#" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Instagram className="w-5 h-5" /></a>
-                <a href="#" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Linkedin className="w-5 h-5" /></a>
-                <a href="#" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Youtube className="w-5 h-5" /></a>
+                <a href="/#social" aria-label="Facebook" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Facebook className="w-5 h-5" /></a>
+                <a href="/#social" aria-label="Twitter" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Twitter className="w-5 h-5" /></a>
+                <a href="/#social" aria-label="Instagram" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Instagram className="w-5 h-5" /></a>
+                <a href="/#social" aria-label="LinkedIn" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Linkedin className="w-5 h-5" /></a>
+                <a href="/#social" aria-label="YouTube" className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors"><Youtube className="w-5 h-5" /></a>
               </div>
             </div>
             
@@ -587,9 +587,9 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-gray-500 text-sm font-light">© 2024 Green Hybrid Power. All rights reserved.</p>
               <div className="flex gap-6">
-                <a href="#" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Privacy Policy</a>
-                <a href="#" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Terms of Service</a>
-                <a href="#" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Sitemap</a>
+                <Link to="/privacy" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Privacy Policy</Link>
+                <Link to="/terms" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Terms of Service</Link>
+                <a href="/sitemap.xml" className="text-gray-500 hover:text-amber-400 text-sm transition-colors">Sitemap</a>
               </div>
             </div>
           </div>

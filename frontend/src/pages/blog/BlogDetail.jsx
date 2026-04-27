@@ -150,7 +150,8 @@ const BlogDetail = () => {
               <div className="relative h-80 lg:h-96">
                 <img 
                   src={blog.featured_image || 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200&q=80'} 
-                  alt={blog.title}
+                  alt={blog.title || 'Blog hero image'}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
