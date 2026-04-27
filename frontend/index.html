@@ -11,11 +11,37 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" as="style" onload="this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"></noscript>
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1920&q=80">
+    <link rel="preload" as="image" href="/assets/hero-1920.webp">
     <link rel="canonical" href="https://greenhybridpower.in/" />
     <title>Green Hybrid Power | Solar & Wind Energy Solutions</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3370837055881287"
-    crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3370837055881287" crossorigin="anonymous"></script>
+    <script>
+      // Defer ad slot rendering until after LCP or first user interaction.
+      (function(){
+        let rendered = false;
+        function renderDeferredAds(){
+          if(rendered) return; rendered = true;
+          // Find placeholders with data-ad-client and data-ad-slot and render them
+          const placeholders = document.querySelectorAll('[data-ad-client][data-ad-slot]');
+          if(!placeholders.length) return;
+          placeholders.forEach(ph => {
+            if (ph.querySelector('ins.adsbygoogle')) return;
+            const ins = document.createElement('ins');
+            ins.className = 'adsbygoogle';
+            ins.style.display = ph.getAttribute('data-style') || 'block';
+            ins.setAttribute('data-ad-client', ph.getAttribute('data-ad-client'));
+            ins.setAttribute('data-ad-slot', ph.getAttribute('data-ad-slot'));
+            if(ph.getAttribute('data-ad-format')) ins.setAttribute('data-ad-format', ph.getAttribute('data-ad-format'));
+            ph.appendChild(ins);
+            try{ (window.adsbygoogle = window.adsbygoogle || []).push({}); }catch(e){}
+          });
+        }
+        // Trigger after load + small delay so LCP can complete
+        window.addEventListener('load', () => setTimeout(renderDeferredAds, 700));
+        // Or render earlier on first interaction
+        ['click','scroll','keydown','touchstart'].forEach(evt => document.addEventListener(evt, renderDeferredAds, { once: true, passive: true }));
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

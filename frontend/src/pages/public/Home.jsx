@@ -134,13 +134,36 @@ const FloatingParticles = () => (
   </div>
 );
 
-const SlowZoomBg = () => (
-  <motion.div 
+// Hero background now uses a responsive local <picture> with AVIF/WebP fallbacks.
+// Ensure the image is not lazy-loaded and has explicit width/height.
+const HeroPicture = () => (
+  <motion.div
     className="absolute inset-0"
-    animate={{ scale: [1, 1.1, 1] }}
+    animate={{ scale: [1, 1.03, 1] }}
     transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
   >
-    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1920&q=80')] bg-cover bg-center opacity-25 mix-blend-overlay" />
+    <picture className="absolute inset-0 block w-full h-full">
+      <source
+        type="image/avif"
+        srcSet="/assets/hero-320.avif 320w, /assets/hero-640.avif 640w, /assets/hero-960.avif 960w, /assets/hero-1280.avif 1280w, /assets/hero-1920.avif 1920w"
+      />
+      <source
+        type="image/webp"
+        srcSet="/assets/hero-320.webp 320w, /assets/hero-640.webp 640w, /assets/hero-960.webp 960w, /assets/hero-1280.webp 1280w, /assets/hero-1920.webp 1920w"
+      />
+      <img
+        src="/assets/hero-1920.jpg"
+        srcSet="/assets/hero-320.jpg 320w, /assets/hero-640.jpg 640w, /assets/hero-960.jpg 960w, /assets/hero-1280.jpg 1280w, /assets/hero-1920.jpg 1920w"
+        sizes="(max-width: 640px) 100vw, 1920px"
+        width="1920"
+        height="1080"
+        alt="Solar panels on rooftop"
+        className="object-cover w-full h-full opacity-25 mix-blend-overlay"
+        onError={(e)=>{ // fallback to remote image if local asset missing
+          if(e?.target?.src && e.target.src.indexOf('images.unsplash.com')===-1) e.target.src = 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1920&q=80';
+        }}
+      />
+    </picture>
   </motion.div>
 );
 
@@ -161,7 +184,7 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700" />
         <div className="absolute inset-0">
-          <SlowZoomBg />
+          <HeroPicture />
           <div className="absolute inset-0 bg-gradient-to-t from-primary-900 via-primary-900/80 to-transparent" />
         </div>
         <div className="absolute inset-0 opacity-30">
