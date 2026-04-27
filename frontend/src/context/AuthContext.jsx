@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const res = await api.post('/users/login', { email, password });
+    const res = await api.post('/api/users/login', { email, password });
     setStorageItem('token', res.data.token);
     const nextUser = { ...res.data.user, role: normalizeRole(res.data.user?.role) };
     setStorageItem('user', JSON.stringify(nextUser));
