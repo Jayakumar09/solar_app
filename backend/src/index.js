@@ -14,9 +14,14 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+const allowedOrigins = [
+  'https://greenhybridpower.in',
+  'https://e4a13a5e.solar-app.pages.dev'
+];
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin === 'https://greenhybridpower.in') {
+  if (allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -29,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: 'https://greenhybridpower.in',
+  origin: allowedOrigins,
   credentials: true,
 }));
 
