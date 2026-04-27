@@ -4,8 +4,11 @@ import './config/env.js';
 import { query } from './config/database.js';
 import blogRoutes from './routes/blog.js';
 import sitemapRoutes from './routes/sitemap.js';
+import authRoutes from './routes/auth.js';
 import { createBlogTable, getBlogCount } from './models/blog.js';
+import { createUsersTable, getUserByEmail, createUser } from './models/users.js';
 import { seedBlogs } from './scripts/seedBlogs.js';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 
@@ -34,6 +37,7 @@ app.use(express.json());
 
 app.use('/api/blogs', blogRoutes);
 app.use('/api', sitemapRoutes);
+app.use('/api/users', authRoutes);
 
 app.get('/', async (req, res) => {
   try {
@@ -61,6 +65,16 @@ app.listen(PORT, async () => {
   
   try {
     await createBlogTable();
+    await createUsersTable();
+    
+    // Create default admin user
+    const adminEmail = 'admin@greenhybridpower.in';
+    const existingAdmin = await getUserByEmail(adminEmail);
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await createUser({ email: adminEmail, password: hashedPassword, name: 'Admin', role: 'admin' });
+      console.log('✅ Default admin user created (admin@greenhybridpower.in / admin123)');
+    }
     
     // Check if blogs exist, seed if empty
     const count = await getBlogCount();
