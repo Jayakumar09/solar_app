@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Calculator, Sun, Battery, Zap, IndianRupee, Clock, 
-  ArrowRight, CheckCircle, MapPin, Home, ChevronDown,
-  Loader2, Leaf, TrendingDown, PiggyBank, Plus, X, RotateCcw, Power
+  ArrowRight, CheckCircle, MapPin, TrendingDown, PiggyBank, RotateCcw, Power,
+  ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import { 
-  createInitialRows, calculateAllRows, getWattForRow, calculateRowLoad,
-  getApplianceSummary, WATT_OPTIONS, COST_PER_KW, EB_RATE_PER_UNIT
+  createInitialRows, calculateAllRows, calculateRowLoad,
+  getApplianceSummary, WATT_OPTIONS, getSolarFactor, SOLAR_FACTORS
 } from '../../utils/loadCalculator';
+import api from '../../services/api';
 
 const SolarCalculator = () => {
   const navigate = useNavigate();
@@ -26,17 +27,21 @@ const SolarCalculator = () => {
   const [useApplianceCalc, setUseApplianceCalc] = useState(false);
   const [rows, setRows] = useState(createInitialRows);
   const [loadResults, setLoadResults] = useState(null);
+  const [includeBattery, setIncludeBattery] = useState(false);
+  const [showROI, setShowROI] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const calcTimeout = useRef(null);
 
   const debouncedCalc = useCallback(() => {
     if (calcTimeout.current) clearTimeout(calcTimeout.current);
     calcTimeout.current = setTimeout(() => {
       if (useApplianceCalc) {
-        const res = calculateAllRows(rows);
+        const city = formData.location || '';
+        const res = calculateAllRows(rows, city, includeBattery);
         setLoadResults(res.validRows > 0 ? res : null);
       }
     }, 200);
-  }, [rows, useApplianceCalc]);
+  }, [rows, useApplianceCalc, formData.location, includeBattery]);
 
   useEffect(() => {
     debouncedCalc();
@@ -50,6 +55,9 @@ const SolarCalculator = () => {
     let units = parseFloat(formData.monthlyUnits) || 0;
     let applianceData = null;
     let solarData = null;
+    let roiData = null;
+    let batteryInfo = null;
+    let paybackYears = 0;
 
     if (useApplianceCalc && loadResults && loadResults.validRows > 0) {
       units = loadResults.monthlyUnits;
@@ -59,6 +67,7 @@ const SolarCalculator = () => {
         dailyUnits: loadResults.dailyUnits,
         monthlyUnits: loadResults.monthlyUnits,
         solarSize: loadResults.requiredKw,
+        solarFactor: loadResults.solarFactor,
         estimatedCost: loadResults.estimatedCost,
       };
       solarData = {
@@ -67,6 +76,12 @@ const SolarCalculator = () => {
         monthlySavings: loadResults.monthlySavings,
         yearlySavings: loadResults.yearlySavings,
       };
+      roiData = loadResults.roiData;
+      batteryInfo = loadResults.batteryIncluded ? {
+        size: loadResults.batterySize,
+        cost: loadResults.batteryCost,
+      } : null;
+      paybackYears = loadResults.paybackYears;
     }
 
     if (units <= 0) return;
@@ -75,22 +90,36 @@ const SolarCalculator = () => {
     
     setTimeout(() => {
       const dailyUnits = units / 30;
+      const city = formData.location || '';
+      const solarFactor = useApplianceCalc ? loadResults.solarFactor : getSolarFactor(city);
       const systemKw = (dailyUnits * 1.2).toFixed(2);
       const panelWatts = 550;
       const panels = Math.ceil((systemKw * 1000) / panelWatts);
       
       const costPerKw = units > 500 ? 45000 : units > 300 ? 50000 : 55000;
       const systemCost = Math.round(systemKw * costPerKw);
+      const batteryCost = batteryInfo ? batteryInfo.cost : 0;
+      const totalCost = systemCost + batteryCost;
       
-      const subsidy = systemCost * 0.4;
-      const finalCost = systemCost - subsidy;
+      const subsidy = totalCost * 0.4;
+      const finalCost = totalCost - subsidy;
       
-      const monthlySavings = solarData ? solarData.monthlySavings : (units * 8).toFixed(0);
+      const monthlySavings = solarData ? solarData.monthlySavings : Math.round(units * 8);
       const annualSavings = monthlySavings * 12;
-      const paybackYears = (finalCost / annualSavings).toFixed(1);
+      const calcPayback = paybackYears || (annualSavings > 0 ? Math.round((finalCost / annualSavings) * 10) / 10 : 0);
       
       const batteryNeeded = dailyUnits > 10 ? '10kWh' : dailyUnits > 5 ? '5kWh' : '3kWh';
-      const batteryCost = batteryNeeded === '10kWh' ? 150000 : batteryNeeded === '5kWh' ? 80000 : 50000;
+      const batteryPrice = batteryNeeded === '10kWh' ? 150000 : batteryNeeded === '5kWh' ? 80000 : 50000;
+
+      let roiChartData = roiData || [];
+      if (!roiData) {
+        roiChartData = [];
+        let cumSavings = 0;
+        for (let y = 0; y <= 25; y++) {
+          cumSavings += annualSavings;
+          roiChartData.push({ year: y, cumulativeSavings: cumSavings, netValue: cumSavings - finalCost });
+        }
+      }
 
       setResults({
         systemKw,
@@ -98,17 +127,21 @@ const SolarCalculator = () => {
         systemCost,
         subsidy,
         finalCost,
-        monthlySavings: Number(monthlySavings),
+        monthlySavings,
         annualSavings,
-        paybackYears,
+        paybackYears: calcPayback,
         batteryNeeded,
-        batteryCost,
+        batteryCost: batteryPrice,
         efficiency: units > 300 ? 'High' : units > 150 ? 'Medium' : 'Standard',
         fromApplianceCalc: useApplianceCalc && loadResults?.validRows > 0,
         applianceData,
         solarData,
         dailyUnits: Math.round(dailyUnits * 100) / 100,
         monthlyUnits: Math.round(units * 100) / 100,
+        solarFactor,
+        roiData: roiChartData,
+        batteryIncluded: !!batteryInfo,
+        totalCost,
       });
       setCalculating(false);
     }, 800);
@@ -135,10 +168,44 @@ const SolarCalculator = () => {
     setRows(createInitialRows());
     setLoadResults(null);
     setResults(null);
+    setIncludeBattery(false);
   };
 
-  const handleGetQuote = () => {
+  const saveCalculation = async (calcResults) => {
+    try {
+      const payload = {
+        name: '',
+        phone: '',
+        email: '',
+        city: formData.location || '',
+        roofType: formData.roofType,
+        roofArea: formData.roofArea,
+        monthlyUnits: calcResults.monthlyUnits,
+        totalLoad: calcResults.applianceData?.totalLoad || 0,
+        dailyUnits: calcResults.dailyUnits,
+        solarKw: calcResults.solarData?.requiredKw || parseFloat(calcResults.systemKw),
+        solarFactor: calcResults.solarFactor,
+        estimatedCost: calcResults.solarData?.estimatedCost || calcResults.systemCost,
+        savingsMonthly: calcResults.monthlySavings,
+        savingsYearly: calcResults.annualSavings,
+        batteryIncluded: calcResults.batteryIncluded,
+        batterySize: calcResults.applianceData ? loadResults?.batterySize || 0 : 0,
+        batteryCost: calcResults.batteryIncluded ? calcResults.systemCost - calcResults.solarData?.estimatedCost || 0 : 0,
+        totalCost: calcResults.totalCost,
+        paybackYears: calcResults.paybackYears,
+        appliances: calcResults.applianceData?.appliances || [],
+        roiData: calcResults.roiData || [],
+      };
+      await api.post('/calculator/submit', payload);
+    } catch (err) {
+      console.warn('Failed to save calculation:', err);
+    }
+  };
+
+  const handleGetQuote = async () => {
     if (!results) return;
+    setSubmitting(true);
+    await saveCalculation(results);
     const quoteState = {
       fromCalculator: true,
       monthlyUnits: results.monthlyUnits,
@@ -153,11 +220,19 @@ const SolarCalculator = () => {
         yearlySavings: results.annualSavings,
       },
       applianceData: results.applianceData || null,
+      batteryData: results.batteryIncluded ? {
+        size: loadResults?.batterySize || 0,
+        cost: loadResults?.batteryCost || 0,
+      } : null,
+      paybackYears: results.paybackYears,
     };
+    setSubmitting(false);
     navigate('/quote-request', { state: quoteState });
   };
 
   const effectiveMonthlyUnits = useApplianceCalc && loadResults ? loadResults.monthlyUnits : (parseFloat(formData.monthlyUnits) || 0);
+
+  const maxROI = results?.roiData ? Math.max(...results.roiData.map(d => d.cumulativeSavings)) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50">
@@ -189,12 +264,11 @@ const SolarCalculator = () => {
                   onChange={(e) => !useApplianceCalc && handleInputChange('monthlyUnits', e.target.value)}
                   placeholder="e.g., 500"
                   readOnly={useApplianceCalc}
-                  className={`w-full px-4 py-3 rounded-xl border ${useApplianceCalc ? 'bg-gray-50 border-gray-300 cursor-not-allowed' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
+                  className={`w-full px-4 py-3 rounded-xl border ${useApplianceCalc ? 'bg-gray-50 border-gray-300' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
                 />
-                {useApplianceCalc && loadResults && (
-                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><Zap className="w-3 h-3" />Auto-calculated from appliances</p>
-                )}
-                {!useApplianceCalc && (
+                {useApplianceCalc && loadResults ? (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Auto-calculated from appliances</p>
+                ) : (
                   <p className="text-xs text-gray-500 mt-1">Check your electricity bill for monthly units consumed</p>
                 )}
               </div>
@@ -242,9 +316,14 @@ const SolarCalculator = () => {
                   type="text" 
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="e.g., Mumbai, Pune, Nashik"
+                  placeholder="e.g., Mumbai, Chennai, Delhi"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none"
                 />
+                {formData.location && (
+                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> Solar factor: {getSolarFactor(formData.location)} kWh/kW/day
+                  </p>
+                )}
               </div>
 
               <div className="border-t border-gray-200 pt-6">
@@ -258,9 +337,10 @@ const SolarCalculator = () => {
                     onClick={() => {
                       setUseApplianceCalc(!useApplianceCalc);
                       setResults(null);
-                      if (!useApplianceCalc && !loadResults) {
+                      if (!useApplianceCalc) {
+                        const city = formData.location || '';
                         setTimeout(() => {
-                          const res = calculateAllRows(rows);
+                          const res = calculateAllRows(rows, city, includeBattery);
                           setLoadResults(res.validRows > 0 ? res : null);
                         }, 100);
                       }
@@ -271,114 +351,165 @@ const SolarCalculator = () => {
                   </button>
                 </div>
 
-                {useApplianceCalc ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500">Select appliances and set usage to auto-calculate your load</p>
-                      <button onClick={resetTable} className="text-xs flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors">
-                        <RotateCcw className="w-3 h-3" /> Reset
-                      </button>
-                    </div>
+                <AnimatePresence>
+                  {useApplianceCalc ? (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-500">Select appliances and set usage to auto-calculate</p>
+                        <button onClick={resetTable} className="text-xs flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors">
+                          <RotateCcw className="w-3 h-3" /> Reset
+                        </button>
+                      </div>
 
-                    <div className="overflow-x-auto max-h-80 overflow-y-auto rounded-xl border border-gray-200">
-                      <table className="w-full text-sm min-w-[500px]">
-                        <thead className="bg-gray-50 sticky top-0 z-10">
-                          <tr>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Appliance</th>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Watt</th>
-                            <th className="text-center px-3 py-2 font-semibold text-gray-600 w-16">Qty</th>
-                            <th className="text-center px-3 py-2 font-semibold text-gray-600 w-20">Hrs/Day</th>
-                            <th className="text-right px-3 py-2 font-semibold text-gray-600 w-20">Load (W)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((row) => {
-                            const rowLoad = calculateRowLoad(row);
-                            return (
-                              <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td className="px-3 py-2">
-                                  <input
-                                    type="text"
-                                    value={row.name}
-                                    onChange={(e) => updateRow(row.id, 'name', e.target.value)}
-                                    placeholder={row.isOther ? 'Other Appliance' : row.name}
-                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <div className="flex gap-1">
-                                    <select
-                                      value={row.wattDropdown}
-                                      onChange={(e) => updateRow(row.id, 'wattDropdown', e.target.value)}
-                                      className="w-20 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
-                                    >
-                                      <option value="">Select</option>
-                                      {WATT_OPTIONS.map(w => (
-                                        <option key={w} value={w}>{w}W</option>
-                                      ))}
-                                      <option value="other">Other</option>
-                                    </select>
-                                    {row.wattDropdown === 'other' && (
+                      <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-gray-200">
+                        <table className="w-full text-sm min-w-[520px]">
+                          <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                              <th className="text-left px-2 py-2 font-semibold text-gray-600">Appliance</th>
+                              <th className="text-left px-2 py-2 font-semibold text-gray-600">Watt</th>
+                              <th className="text-center px-2 py-2 font-semibold text-gray-600 w-14">Qty</th>
+                              <th className="text-center px-2 py-2 font-semibold text-gray-600 w-16">Hrs</th>
+                              <th className="text-center px-2 py-2 font-semibold text-gray-600 w-12">BLDC</th>
+                              <th className="text-right px-2 py-2 font-semibold text-gray-600 w-20">Load</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((row) => {
+                              const rowLoad = calculateRowLoad(row);
+                              const isFan = row.name?.toLowerCase().includes('fan');
+                              return (
+                                <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50">
+                                  <td className="px-2 py-1.5">
+                                    <input
+                                      type="text"
+                                      value={row.name}
+                                      onChange={(e) => updateRow(row.id, 'name', e.target.value)}
+                                      placeholder={row.isOther ? 'Other' : row.name}
+                                      className="w-full px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <div className="flex gap-1">
+                                      <select
+                                        value={row.wattDropdown}
+                                        onChange={(e) => updateRow(row.id, 'wattDropdown', e.target.value)}
+                                        className="w-16 px-1 py-1 text-xs border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                      >
+                                        <option value="">W</option>
+                                        {WATT_OPTIONS.map(w => (
+                                          <option key={w} value={w}>{w}</option>
+                                        ))}
+                                        <option value="other">✏️</option>
+                                      </select>
+                                      {row.wattDropdown === 'other' && (
+                                        <input
+                                          type="number"
+                                          value={row.customWatt}
+                                          onChange={(e) => updateRow(row.id, 'customWatt', e.target.value)}
+                                          placeholder="W"
+                                          className="w-12 px-1 py-1 text-xs border border-gray-200 rounded-lg outline-none"
+                                        />
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={row.quantity}
+                                      onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
+                                      className="w-full px-1 py-1 text-xs border border-gray-200 rounded-lg text-center outline-none focus:ring-1 focus:ring-amber-500"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="24"
+                                      step="0.5"
+                                      value={row.hours}
+                                      onChange={(e) => updateRow(row.id, 'hours', e.target.value)}
+                                      className="w-full px-1 py-1 text-xs border border-gray-200 rounded-lg text-center outline-none focus:ring-1 focus:ring-amber-500"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1.5 text-center">
+                                    {isFan && (
                                       <input
-                                        type="number"
-                                        value={row.customWatt}
-                                        onChange={(e) => updateRow(row.id, 'customWatt', e.target.value)}
-                                        placeholder="W"
-                                        className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                        type="checkbox"
+                                        checked={row.isBLDC || false}
+                                        onChange={(e) => updateRow(row.id, 'isBLDC', e.target.checked)}
+                                        className="w-4 h-4 accent-green-600"
+                                        title="BLDC fan (40% less power)"
                                       />
                                     )}
-                                  </div>
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={row.quantity}
-                                    onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
-                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg text-center focus:ring-1 focus:ring-amber-500 outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="24"
-                                    step="0.5"
-                                    value={row.hours}
-                                    onChange={(e) => updateRow(row.id, 'hours', e.target.value)}
-                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg text-center focus:ring-1 focus:ring-amber-500 outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-700">
-                                  {rowLoad > 0 ? rowLoad : '-'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {loadResults && loadResults.validRows > 0 && (
-                      <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-                        <div className="grid grid-cols-3 gap-3 text-center">
-                          <div>
-                            <div className="text-lg font-bold text-green-700">{loadResults.totalLoad}W</div>
-                            <div className="text-xs text-green-600">Total Load</div>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold text-green-700">{loadResults.dailyUnits} kWh</div>
-                            <div className="text-xs text-green-600">Daily</div>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold text-green-700">{loadResults.monthlyUnits} kWh</div>
-                            <div className="text-xs text-green-600">Monthly</div>
-                          </div>
-                        </div>
+                                  </td>
+                                  <td className="px-2 py-1.5 text-right font-medium text-gray-700 text-xs">
+                                    {rowLoad > 0 ? `${rowLoad}W` : '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </div>
-                ) : null}
+
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <Battery className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span className="text-sm text-blue-800 font-medium">Include Battery Backup</span>
+                        <button
+                          onClick={() => { setIncludeBattery(!includeBattery); setResults(null); }}
+                          className={`relative w-10 h-5 rounded-full transition-colors ml-auto ${includeBattery ? 'bg-blue-500' : 'bg-gray-300'}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeBattery ? 'translate-x-5' : ''}`} />
+                        </button>
+                      </div>
+
+                      {loadResults && loadResults.validRows > 0 && (
+                        <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.totalLoad}W</div>
+                              <div className="text-xs text-green-600">Total Load</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.dailyUnits} kWh</div>
+                              <div className="text-xs text-green-600">Daily</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.monthlyUnits} kWh</div>
+                              <div className="text-xs text-green-600">Monthly</div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 text-center mt-3">
+                            <div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.requiredKw} kW</div>
+                              <div className="text-xs text-green-600">Solar Size</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-green-700">₹{loadResults.estimatedCost.toLocaleString()}</div>
+                              <div className="text-xs text-green-600">Est. Cost</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.paybackYears}yr</div>
+                              <div className="text-xs text-green-600">Payback</div>
+                            </div>
+                          </div>
+                          {loadResults.batteryIncluded && loadResults.batterySize > 0 && (
+                            <div className="mt-3 pt-3 border-t border-green-200 text-center">
+                              <span className="text-sm text-blue-700 font-medium">🔋 Battery: {loadResults.batterySize} kWh (+₹{loadResults.batteryCost.toLocaleString()})</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </div>
 
               <button 
@@ -387,13 +518,9 @@ const SolarCalculator = () => {
                 className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {calculating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> Calculating...
-                  </>
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Calculating...</>
                 ) : (
-                  <>
-                    <Calculator className="w-5 h-5" /> Calculate Savings
-                  </>
+                  <><Calculator className="w-5 h-5" /> Calculate Savings</>
                 )}
               </button>
             </div>
@@ -447,8 +574,8 @@ const SolarCalculator = () => {
                         <div className="font-bold text-gray-900">{results.monthlyUnits} kWh</div>
                       </div>
                       <div className="bg-white rounded-lg p-3">
-                        <div className="text-xs text-gray-500">Recommended</div>
-                        <div className="font-bold text-green-700">{results.solarData.requiredKw} kW</div>
+                        <div className="text-xs text-gray-500">Solar Factor</div>
+                        <div className="font-bold text-green-700">{results.solarFactor} kWh/kW</div>
                       </div>
                     </div>
                   </div>
@@ -459,7 +586,7 @@ const SolarCalculator = () => {
                     <PiggyBank className="w-6 h-6 text-green-600" />
                     <span className="font-bold text-green-800 text-lg">Monthly Savings</span>
                   </div>
-                  <div className="text-4xl font-bold text-green-700">₹{results.monthlySavings.toLocaleString()}/month</div>
+                  <div className="text-4xl font-bold text-green-700">₹{results.monthlySavings.toLocaleString()}/mo</div>
                   <div className="text-sm text-green-600 mt-1">₹{results.annualSavings.toLocaleString()}/year</div>
                 </div>
 
@@ -479,6 +606,16 @@ const SolarCalculator = () => {
                     <div className="text-xl font-bold text-green-600">-₹{results.subsidy.toLocaleString()}</div>
                   </div>
                 </div>
+
+                {results.batteryIncluded && results.totalCost > results.systemCost && (
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Battery className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm text-blue-700 font-medium">Battery Backup Included</span>
+                    </div>
+                    <div className="text-lg font-bold text-blue-800">+₹{(results.totalCost - results.systemCost).toLocaleString()}</div>
+                  </div>
+                )}
 
                 <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
                   <div className="flex items-center justify-between mb-2">
@@ -507,10 +644,71 @@ const SolarCalculator = () => {
                 </div>
 
                 <button
-                  onClick={handleGetQuote}
-                  className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                  onClick={() => setShowROI(!showROI)}
+                  className="w-full py-3 border-2 border-green-200 text-green-700 font-semibold rounded-xl hover:bg-green-50 transition-all flex items-center justify-center gap-2"
                 >
-                  <CheckCircle className="w-5 h-5" /> Get Free Quote
+                  <TrendingDown className="w-4 h-4" />
+                  {showROI ? 'Hide' : 'View'} ROI Analysis
+                  {showROI ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+
+                <AnimatePresence>
+                  {showROI && results.roiData && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                          <IndianRupee className="w-4 h-4 text-green-600" />
+                          Investment vs Savings (25 Years)
+                        </h3>
+                        <div className="space-y-1">
+                          {results.roiData.filter((_, i) => i % 5 === 0).map((d) => {
+                            const pct = maxROI > 0 ? (d.cumulativeSavings / maxROI * 100) : 0;
+                            const netPct = maxROI > 0 ? (Math.max(d.netValue, 0) / maxROI * 100) : 0;
+                            const breakEven = d.netValue >= 0;
+                            return (
+                              <div key={d.year} className="flex items-center gap-2 text-xs">
+                                <span className="w-8 text-gray-500 font-medium">Yr {d.year}</span>
+                                <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden relative">
+                                  <div
+                                    className="h-full bg-blue-400 transition-all duration-500 rounded-full"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                  {breakEven && (
+                                    <div
+                                      className="h-full absolute top-0 bg-green-500 transition-all duration-500 rounded-full opacity-60"
+                                      style={{ width: `${netPct}%` }}
+                                    />
+                                  )}
+                                </div>
+                                <span className={`w-24 text-right font-semibold ${breakEven ? 'text-green-600' : 'text-red-500'}`}>
+                                  ₹{(d.netValue / 100000).toFixed(1)}L
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-400 rounded inline-block" /> Savings</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded inline-block opacity-60" /> Net Value</span>
+                          <span className="ml-auto">Break-even: Year {results.paybackYears}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  onClick={handleGetQuote}
+                  disabled={submitting}
+                  className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : <><CheckCircle className="w-5 h-5" /> Get Free Quote</>}
                 </button>
 
                 <Link 

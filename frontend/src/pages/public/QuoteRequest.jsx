@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { FileText, User, Phone, Mail, MapPin, CheckCircle, AlertCircle, Loader2, Zap } from 'lucide-react';
+import { FileText, User, Phone, Mail, MapPin, CheckCircle, AlertCircle, Loader2, Zap, Battery, Clock } from 'lucide-react';
 
 const fallbackPlans = [
   { id: 'basic', name: 'Basic Solar', price: 125000 },
@@ -58,6 +58,8 @@ export default function QuoteRequest() {
         roof_area: calcData?.roofArea || undefined,
         solar_data: calcData?.solarData || undefined,
         appliance_data: calcData?.applianceData || undefined,
+        battery_data: calcData?.batteryData || undefined,
+        payback_years: calcData?.paybackYears || undefined,
       };
       await api.post('/leads', payload);
       toast.success('Quote request submitted! Our team will prepare a customized quotation and contact you within 24 hours.');
@@ -112,7 +114,7 @@ export default function QuoteRequest() {
                   <div className="font-bold text-green-700">{calcData.applianceData.solarSize} kW</div>
                 </div>
               </div>
-              <div className="mt-3 grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="mt-3 grid sm:grid-cols-3 gap-4 text-sm">
                 <div className="bg-white rounded-lg p-3">
                   <div className="text-xs text-gray-500">Estimated Cost</div>
                   <div className="font-bold text-gray-900">₹{calcData.applianceData.estimatedCost.toLocaleString()}</div>
@@ -121,10 +123,22 @@ export default function QuoteRequest() {
                   <div className="text-xs text-gray-500">Monthly Savings</div>
                   <div className="font-bold text-green-700">₹{calcData.solarData?.monthlySavings.toLocaleString()}</div>
                 </div>
+                {calcData.paybackYears && (
+                  <div className="bg-white rounded-lg p-3">
+                    <div className="text-xs text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Payback</div>
+                    <div className="font-bold text-amber-700">{calcData.paybackYears} years</div>
+                  </div>
+                )}
               </div>
+              {calcData.batteryData && calcData.batteryData.size > 0 && (
+                <div className="mt-3 bg-blue-100 rounded-lg p-3 text-sm flex items-center gap-2">
+                  <Battery className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium text-blue-800">Battery: {calcData.batteryData.size} kWh (+₹{calcData.batteryData.cost.toLocaleString()})</span>
+                </div>
+              )}
               <div className="mt-3 text-xs text-gray-500">
-                <strong>Appliances used:</strong>{' '}
-                {calcData.applianceData.appliances.map(a => `${a.name} (${a.watts}W × ${a.quantity})`).join(', ')}
+                <strong>Appliances:</strong>{' '}
+                {calcData.applianceData.appliances.map(a => `${a.name} (${a.watt}W×${a.quantity})`).join(', ')}
               </div>
             </motion.div>
           )}
