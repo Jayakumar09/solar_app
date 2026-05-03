@@ -2,81 +2,41 @@ import pkg from "pg";
 const { Pool } = pkg;
 
 const isProduction = process.env.NODE_ENV === "production";
+const dbSsl = process.env.DB_SSL === "true";
 
-console.log("?? DB ENV:", process.env.NODE_ENV || "undefined");
-console.log("?? Using SSL: true (pooled connection)");
-
-// Parse DATABASE_URL for diagnostics
 let dbUrl = process.env.DATABASE_URL;
-let useSsl = false;
-let sslConfig = false;
+
+// Strip sslmode from URL to avoid pg-pool conflict with explicit ssl config
+if (dbUrl) {
+  dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/, "").replace(/\?$/, "");
+}
+
+const isRemoteDb = dbUrl && !/localhost|127\.0\.0\.1/.test(new URL(dbUrl).hostname);
+
+const sslEnabled = isProduction || dbSsl || isRemoteDb;
 
 if (dbUrl) {
-  try {
-    const url = new URL(dbUrl);
-    console.log("?? DB Host:", url.hostname);
-    console.log("?? DB Port:", url.port || "5432");
-    console.log("?? DB Path:", url.pathname);
-
-    // Determine if we should use SSL based on connection string
-    if (/sslmode=/.test(dbUrl)) {
-      console.log("🔒 sslmode present in connection string, forcing rejectUnauthorized:false for compatibility");
-      useSsl = true;
-      sslConfig = { rejectUnauthorized: false };
-    } else if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-      // Local connections typically don't need SSL
-      console.log("🔒 Local connection detected, SSL disabled");
-      useSsl = false;
-      sslConfig = false;
-    } else {
-      // Remote connection - use SSL with rejectUnauthorized: false for broad compatibility
-      useSsl = true;
-      sslConfig = { rejectUnauthorized: false };
-    }
-  } catch (e) {
-    console.log("?? DB URL parse error:", e.message);
-    useSsl = true;
-    sslConfig = { rejectUnauthorized: false };
-  }
+  const url = new URL(dbUrl);
+  console.log("🔗 DB Host:", url.hostname);
+  console.log("🔗 DB Port:", url.port || "5432");
+  console.log("🔒 SSL Config:", sslEnabled ? (isProduction ? "Enabled (Relaxed)" : "Enabled") : "Disabled");
 } else {
-  console.log("?? DATABASE_URL not set - database features disabled");
+  console.log("⚠️ DATABASE_URL not set - database features disabled");
 }
 
 const config = {
   connectionString: dbUrl,
-  ...(useSsl && sslConfig !== false ? { ssl: sslConfig } : {}),
+  ssl: sslEnabled ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   max: 20,
 };
-
 
 const pool = new Pool(config);
 
 pool.on("error", (err) => {
   console.error("Unexpected pool error:", err.message);
 });
-
-// Test connection with retry
-const testConnection = async (retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const result = await pool.query("SELECT NOW()");
-      console.log("?? Database connected successfully");
-      return true;
-    } catch (err) {
-      console.error(`?? Connection attempt ${i + 1} failed:`, err.message);
-      if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-  }
-  console.error("?? Database connection failed after retries");
-  return false;
-};
-
-// Run initial test
-setTimeout(() => testConnection(), 1000);
 
 export const query = async (text, params) => {
   try {
@@ -87,6 +47,27 @@ export const query = async (text, params) => {
     throw err;
   }
 };
+
+const testConnection = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await pool.query("SELECT NOW()");
+      console.log("✅ Database connected successfully");
+      return true;
+    } catch (err) {
+      console.error(`⚠️ Connection attempt ${i + 1} failed:`, err.message);
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+  console.error("❌ Database connection failed after retries");
+  return false;
+};
+
+if (dbUrl) {
+  setTimeout(() => testConnection(), 1000);
+}
 
 export { pool };
 export default pool;
