@@ -14,27 +14,19 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
-  'https://greenhybridpower.in',
-  'https://e4a13a5e.solar-app.pages.dev'
-];
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  }
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
-  next();
-});
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://greenhybridpower.in', 'https://e4a13a5e.solar-app.pages.dev']
+  : ['http://localhost:5173', 'http://localhost:3000', 'https://greenhybridpower.in', 'https://e4a13a5e.solar-app.pages.dev'];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
@@ -62,38 +54,39 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  
-  // Wait for DB connection
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  
+const initializeApp = async () => {
   try {
     await createBlogTable();
     await createUsersTable();
     
-    // Create default admin user
     const adminEmail = 'admin@greenhybridpower.in';
     const existingAdmin = await getUserByEmail(adminEmail);
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await createUser({ email: adminEmail, password: hashedPassword, name: 'Admin', role: 'admin' });
-      console.log('✅ Default admin user created (admin@greenhybridpower.in / admin123)');
+      console.log('? Default admin user created (admin@greenhybridpower.in / admin123)');
+    } else {
+      console.log('? Admin user already exists');
     }
     
-    // Check if blogs exist, seed if empty
     const count = await getBlogCount();
-    console.log(`📊 Current blog count: ${count}`);
+    console.log(`?? Current blog count: ${count}`);
     
     if (count === 0) {
-      console.log('📝 No blogs found. Starting seed...');
+      console.log('?? No blogs found. Starting seed...');
       await seedBlogs();
       const newCount = await getBlogCount();
-      console.log(`✅ Seeding complete! Total blogs: ${newCount}`);
+      console.log(`? Seeding complete! Total blogs: ${newCount}`);
     } else {
-      console.log(`✅ Blog system ready with ${count} existing posts`);
+      console.log(`? Blog system ready with ${count} existing posts`);
     }
   } catch (err) {
-    console.error('✗ Blog system initialization failed:', err.message);
+    console.error('? Blog system initialization failed:', err.message);
   }
+};
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`? CORS enabled for origins: ${allowedOrigins.join(', ')}`);
+  setTimeout(initializeApp, 500);
 });

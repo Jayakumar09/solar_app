@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = getStorageItem('token');
     if (token) {
-      api.get('/users/profile')
+      api.get('/api/users/profile')
         .then((res) => {
           const nextUser = { ...res.data, role: normalizeRole(res.data?.role) };
           setUser(nextUser);
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (data) => {
-    const res = await api.post('/users/register', { role: 'client', ...data });
+    const res = await api.post('/api/users/register', { role: 'client', ...data });
     return res.data;
   };
 
