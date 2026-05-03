@@ -157,6 +157,8 @@ const SolarCalculator = () => {
     navigate('/quote-request', { state: quoteState });
   };
 
+  console.log("SmartLoadCalculator Loaded");
+
   const effectiveMonthlyUnits = useApplianceCalc && loadResults ? loadResults.monthlyUnits : (parseFloat(formData.monthlyUnits) || 0);
 
   return (
