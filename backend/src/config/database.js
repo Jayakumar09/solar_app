@@ -19,14 +19,13 @@ if (dbUrl) {
     console.log("?? DB Path:", url.pathname);
 
     // Determine if we should use SSL based on connection string
-    // If sslmode is present in the connection string, let pg handle SSL config
     if (/sslmode=/.test(dbUrl)) {
-      console.log("?? sslmode present in connection string, letting pg handle SSL config");
+      console.log("🔒 sslmode present in connection string, forcing rejectUnauthorized:false for compatibility");
       useSsl = true;
-      sslConfig = undefined;
+      sslConfig = { rejectUnauthorized: false };
     } else if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
       // Local connections typically don't need SSL
-      console.log("?? Local connection detected, SSL disabled");
+      console.log("🔒 Local connection detected, SSL disabled");
       useSsl = false;
       sslConfig = false;
     } else {
