@@ -272,12 +272,7 @@ const SolarCalculator = () => {
                 </div>
 
                 {useApplianceCalc && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4"
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-gray-500">Select appliances and set usage to auto-calculate your load</p>
                       <button onClick={resetTable} className="text-xs flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors">
