@@ -117,12 +117,9 @@ function calculateSubsidy(kw, systemCost) {
   if (kw <= 2) {
     subsidy = systemCost * 0.4;
   } else if (kw <= 3) {
-    const costFirst2kW = 2 * costPerKw;
-    const costRemaining = systemCost - costFirst2kW;
-    subsidy = costFirst2kW * 0.4 + costRemaining * 0.2;
+    subsidy = systemCost * 0.3;
   } else {
-    const costFirst3kW = 3 * costPerKw;
-    subsidy = costFirst3kW * 0.3;
+    subsidy = (3 * costPerKw) * 0.3;
   }
   return Math.round(subsidy);
 }
