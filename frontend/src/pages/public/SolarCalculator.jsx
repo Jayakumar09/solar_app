@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Calculator, Sun, Battery, Zap, IndianRupee, Clock, 
   ArrowRight, CheckCircle, MapPin, Home, ChevronDown,
-  Loader2, Leaf, TrendingDown, PiggyBank
+  Loader2, Leaf, TrendingDown, PiggyBank, Plus, X, RotateCcw, Power
 } from 'lucide-react';
+import { 
+  createInitialRows, calculateAllRows, getWattForRow, calculateRowLoad,
+  getApplianceSummary, WATT_OPTIONS, COST_PER_KW, EB_RATE_PER_UNIT
+} from '../../utils/loadCalculator';
 
 const SolarCalculator = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     monthlyUnits: '',
     currentBill: '',
@@ -18,8 +23,52 @@ const SolarCalculator = () => {
   const [results, setResults] = useState(null);
   const [calculating, setCalculating] = useState(false);
 
+  const [useApplianceCalc, setUseApplianceCalc] = useState(false);
+  const [rows, setRows] = useState(createInitialRows);
+  const [loadResults, setLoadResults] = useState(null);
+  const calcTimeout = useRef(null);
+
+  const debouncedCalc = useCallback(() => {
+    if (calcTimeout.current) clearTimeout(calcTimeout.current);
+    calcTimeout.current = setTimeout(() => {
+      if (useApplianceCalc) {
+        const res = calculateAllRows(rows);
+        setLoadResults(res.validRows > 0 ? res : null);
+      }
+    }, 200);
+  }, [rows, useApplianceCalc]);
+
+  useEffect(() => {
+    debouncedCalc();
+  }, [debouncedCalc]);
+
+  useEffect(() => {
+    return () => { if (calcTimeout.current) clearTimeout(calcTimeout.current); };
+  }, []);
+
   const calculateSystem = () => {
-    const units = parseFloat(formData.monthlyUnits) || 0;
+    let units = parseFloat(formData.monthlyUnits) || 0;
+    let applianceData = null;
+    let solarData = null;
+
+    if (useApplianceCalc && loadResults && loadResults.validRows > 0) {
+      units = loadResults.monthlyUnits;
+      applianceData = {
+        appliances: getApplianceSummary(rows),
+        totalLoad: loadResults.totalLoad,
+        dailyUnits: loadResults.dailyUnits,
+        monthlyUnits: loadResults.monthlyUnits,
+        solarSize: loadResults.requiredKw,
+        estimatedCost: loadResults.estimatedCost,
+      };
+      solarData = {
+        requiredKw: loadResults.requiredKw,
+        estimatedCost: loadResults.estimatedCost,
+        monthlySavings: loadResults.monthlySavings,
+        yearlySavings: loadResults.yearlySavings,
+      };
+    }
+
     if (units <= 0) return;
 
     setCalculating(true);
@@ -36,7 +85,7 @@ const SolarCalculator = () => {
       const subsidy = systemCost * 0.4;
       const finalCost = systemCost - subsidy;
       
-      const monthlySavings = (units * 8).toFixed(0);
+      const monthlySavings = solarData ? solarData.monthlySavings : (units * 8).toFixed(0);
       const annualSavings = monthlySavings * 12;
       const paybackYears = (finalCost / annualSavings).toFixed(1);
       
@@ -49,12 +98,17 @@ const SolarCalculator = () => {
         systemCost,
         subsidy,
         finalCost,
-        monthlySavings,
+        monthlySavings: Number(monthlySavings),
         annualSavings,
         paybackYears,
         batteryNeeded,
         batteryCost,
         efficiency: units > 300 ? 'High' : units > 150 ? 'Medium' : 'Standard',
+        fromApplianceCalc: useApplianceCalc && loadResults?.validRows > 0,
+        applianceData,
+        solarData,
+        dailyUnits: Math.round(dailyUnits * 100) / 100,
+        monthlyUnits: Math.round(units * 100) / 100,
       });
       setCalculating(false);
     }, 800);
@@ -64,6 +118,46 @@ const SolarCalculator = () => {
     setFormData({ ...formData, [field]: value });
     setResults(null);
   };
+
+  const updateRow = (id, field, value) => {
+    setRows(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'wattDropdown' && value !== 'other') {
+        updated.customWatt = '';
+      }
+      return updated;
+    }));
+    setResults(null);
+  };
+
+  const resetTable = () => {
+    setRows(createInitialRows());
+    setLoadResults(null);
+    setResults(null);
+  };
+
+  const handleGetQuote = () => {
+    if (!results) return;
+    const quoteState = {
+      fromCalculator: true,
+      monthlyUnits: results.monthlyUnits,
+      currentBill: formData.currentBill,
+      location: formData.location,
+      roofType: formData.roofType,
+      roofArea: formData.roofArea,
+      solarData: results.solarData || {
+        requiredKw: parseFloat(results.systemKw),
+        estimatedCost: results.systemCost,
+        monthlySavings: results.monthlySavings,
+        yearlySavings: results.annualSavings,
+      },
+      applianceData: results.applianceData || null,
+    };
+    navigate('/quote-request', { state: quoteState });
+  };
+
+  const effectiveMonthlyUnits = useApplianceCalc && loadResults ? loadResults.monthlyUnits : (parseFloat(formData.monthlyUnits) || 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50">
@@ -91,12 +185,18 @@ const SolarCalculator = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Consumption (Units)</label>
                 <input 
                   type="number" 
-                  value={formData.monthlyUnits}
-                  onChange={(e) => handleInputChange('monthlyUnits', e.target.value)}
+                  value={useApplianceCalc && loadResults ? loadResults.monthlyUnits.toFixed(1) : formData.monthlyUnits}
+                  onChange={(e) => !useApplianceCalc && handleInputChange('monthlyUnits', e.target.value)}
                   placeholder="e.g., 500"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg"
+                  readOnly={useApplianceCalc}
+                  className={`w-full px-4 py-3 rounded-xl border ${useApplianceCalc ? 'bg-gray-50 border-gray-300 cursor-not-allowed' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
                 />
-                <p className="text-xs text-gray-500 mt-1">Check your electricity bill for monthly units consumed</p>
+                {useApplianceCalc && loadResults && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><Zap className="w-3 h-3" />Auto-calculated from appliances</p>
+                )}
+                {!useApplianceCalc && (
+                  <p className="text-xs text-gray-500 mt-1">Check your electricity bill for monthly units consumed</p>
+                )}
               </div>
 
               <div>
@@ -147,9 +247,148 @@ const SolarCalculator = () => {
                 />
               </div>
 
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Power className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-gray-900">Smart Load Calculator</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Optional</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUseApplianceCalc(!useApplianceCalc);
+                      setResults(null);
+                      if (!useApplianceCalc && !loadResults) {
+                        setTimeout(() => {
+                          const res = calculateAllRows(rows);
+                          setLoadResults(res.validRows > 0 ? res : null);
+                        }, 100);
+                      }
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors ${useApplianceCalc ? 'bg-green-500' : 'bg-gray-300'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${useApplianceCalc ? 'translate-x-7' : ''}`} />
+                  </button>
+                </div>
+
+                {useApplianceCalc && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">Select appliances and set usage to auto-calculate your load</p>
+                      <button onClick={resetTable} className="text-xs flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors">
+                        <RotateCcw className="w-3 h-3" /> Reset
+                      </button>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-80 overflow-y-auto rounded-xl border border-gray-200">
+                      <table className="w-full text-sm min-w-[500px]">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Appliance</th>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Watt</th>
+                            <th className="text-center px-3 py-2 font-semibold text-gray-600 w-16">Qty</th>
+                            <th className="text-center px-3 py-2 font-semibold text-gray-600 w-20">Hrs/Day</th>
+                            <th className="text-right px-3 py-2 font-semibold text-gray-600 w-20">Load (W)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row) => {
+                            const rowLoad = calculateRowLoad(row);
+                            return (
+                              <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="text"
+                                    value={row.name}
+                                    onChange={(e) => updateRow(row.id, 'name', e.target.value)}
+                                    placeholder={row.isOther ? 'Other Appliance' : row.name}
+                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                  />
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex gap-1">
+                                    <select
+                                      value={row.wattDropdown}
+                                      onChange={(e) => updateRow(row.id, 'wattDropdown', e.target.value)}
+                                      className="w-20 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                    >
+                                      <option value="">Select</option>
+                                      {WATT_OPTIONS.map(w => (
+                                        <option key={w} value={w}>{w}W</option>
+                                      ))}
+                                      <option value="other">Other</option>
+                                    </select>
+                                    {row.wattDropdown === 'other' && (
+                                      <input
+                                        type="number"
+                                        value={row.customWatt}
+                                        onChange={(e) => updateRow(row.id, 'customWatt', e.target.value)}
+                                        placeholder="W"
+                                        className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none"
+                                      />
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={row.quantity}
+                                    onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
+                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg text-center focus:ring-1 focus:ring-amber-500 outline-none"
+                                  />
+                                </td>
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="24"
+                                    step="0.5"
+                                    value={row.hours}
+                                    onChange={(e) => updateRow(row.id, 'hours', e.target.value)}
+                                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg text-center focus:ring-1 focus:ring-amber-500 outline-none"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-gray-700">
+                                  {rowLoad > 0 ? rowLoad : '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {loadResults && loadResults.validRows > 0 && (
+                      <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                          <div>
+                            <div className="text-lg font-bold text-green-700">{loadResults.totalLoad}W</div>
+                            <div className="text-xs text-green-600">Total Load</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-green-700">{loadResults.dailyUnits} kWh</div>
+                            <div className="text-xs text-green-600">Daily</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-green-700">{loadResults.monthlyUnits} kWh</div>
+                            <div className="text-xs text-green-600">Monthly</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
               <button 
                 onClick={calculateSystem}
-                disabled={calculating || !formData.monthlyUnits}
+                disabled={calculating || effectiveMonthlyUnits <= 0}
                 className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {calculating ? (
@@ -193,13 +432,40 @@ const SolarCalculator = () => {
                   </div>
                 </div>
 
+                {results.fromApplianceCalc && results.solarData && (
+                  <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-5 h-5 text-blue-600" />
+                      <span className="font-semibold text-blue-800">Load Calculator Summary</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500">Total Load</div>
+                        <div className="font-bold text-gray-900">{results.applianceData?.totalLoad || '-'} W</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500">Daily Usage</div>
+                        <div className="font-bold text-gray-900">{results.dailyUnits} kWh</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500">Monthly Units</div>
+                        <div className="font-bold text-gray-900">{results.monthlyUnits} kWh</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500">Recommended</div>
+                        <div className="font-bold text-green-700">{results.solarData.requiredKw} kW</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
                   <div className="flex items-center gap-2 mb-3">
                     <PiggyBank className="w-6 h-6 text-green-600" />
                     <span className="font-bold text-green-800 text-lg">Monthly Savings</span>
                   </div>
-                  <div className="text-4xl font-bold text-green-700">₹{results.monthlySavings}/month</div>
-                  <div className="text-sm text-green-600 mt-1">₹{results.annualSavings}/year</div>
+                  <div className="text-4xl font-bold text-green-700">₹{results.monthlySavings.toLocaleString()}/month</div>
+                  <div className="text-sm text-green-600 mt-1">₹{results.annualSavings.toLocaleString()}/year</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -245,11 +511,18 @@ const SolarCalculator = () => {
                   </div>
                 </div>
 
+                <button
+                  onClick={handleGetQuote}
+                  className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" /> Get Free Quote
+                </button>
+
                 <Link 
                   to="/book-inspection"
-                  className="block w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all text-center flex items-center justify-center gap-2"
+                  className="block w-full py-4 bg-primary-600 text-white font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all text-center flex items-center justify-center gap-2"
                 >
-                  <CheckCircle className="w-5 h-5" /> Get Free Inspection
+                  <MapPin className="w-5 h-5" /> Get Free Inspection
                 </Link>
 
                 <p className="text-xs text-center text-gray-500">*Based on standard solar calculations. Actual results may vary based on site conditions.</p>
