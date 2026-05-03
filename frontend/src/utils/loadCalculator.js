@@ -1,23 +1,70 @@
-const WATT_OPTIONS = [15, 25, 40, 60, 75, 100, 200, 500, 1000, 1500];
+const APPLIANCE_WATTS = {
+  Lamp: [5, 9, 12, 15, 20, 40, 60],
+  'Ceiling Fan': [28, 35, 50, 75, 90],
+  'BLDC Ceiling Fan': [25, 30, 35],
+  'Table Fan': [40, 60, 75],
+  TV: [60, 100, 150, 200],
+  Refrigerator: [100, 150, 200, 300],
+  'Washing Machine': [400, 500, 700],
+  'Water Pump': [750, 1000, 1500],
+  'Air Conditioner': [1000, 1500, 2000],
+  'Electric Iron': [750, 1000, 1500],
+  Mixer: [300, 500, 750],
+  Computer: [100, 150, 300],
+  'Mobile Charger': [5, 10, 20],
+};
+
+const DEFAULT_WATTS = {
+  Lamp: 15,
+  'Ceiling Fan': 75,
+  'BLDC Ceiling Fan': 30,
+  'Table Fan': 60,
+  TV: 100,
+  Refrigerator: 150,
+  'Washing Machine': 500,
+  'Water Pump': 1000,
+  'Air Conditioner': 1500,
+  'Electric Iron': 1000,
+  Mixer: 500,
+  Computer: 150,
+  'Mobile Charger': 10,
+};
+
+const DEFAULT_HOURS = {
+  Lamp: 5,
+  'Ceiling Fan': 8,
+  'BLDC Ceiling Fan': 8,
+  'Table Fan': 4,
+  TV: 4,
+  Refrigerator: 24,
+  'Washing Machine': 1,
+  'Water Pump': 2,
+  'Air Conditioner': 6,
+  'Electric Iron': 1,
+  Mixer: 1,
+  Computer: 4,
+  'Mobile Charger': 2,
+};
 
 const DEFAULT_APPLIANCES = [
-  { name: 'Lamp', watts: 40, hours: 5 },
-  { name: 'Ceiling Fan', watts: 75, hours: 8 },
-  { name: 'TV', watts: 100, hours: 4 },
-  { name: 'Refrigerator', watts: 200, hours: 24 },
-  { name: 'Washing Machine', watts: 500, hours: 1 },
-  { name: 'Water Pump', watts: 1000, hours: 2 },
-  { name: 'Air Conditioner', watts: 1500, hours: 6 },
-  { name: 'Electric Iron', watts: 1000, hours: 1 },
-  { name: 'Mixer', watts: 500, hours: 1 },
-  { name: 'Computer', watts: 200, hours: 4 },
-  { name: 'Mobile Charger', watts: 15, hours: 2 },
+  { name: 'Lamp', hours: 5 },
+  { name: 'Ceiling Fan', hours: 8 },
+  { name: 'TV', hours: 4 },
+  { name: 'Refrigerator', hours: 24 },
+  { name: 'Washing Machine', hours: 1 },
+  { name: 'Water Pump', hours: 2 },
+  { name: 'Air Conditioner', hours: 6 },
+  { name: 'Electric Iron', hours: 1 },
+  { name: 'Mixer', hours: 1 },
+  { name: 'Computer', hours: 4 },
+  { name: 'Mobile Charger', hours: 2 },
 ];
 
 const OTHER_ROWS = 3;
 const COST_PER_KW = 50000;
 const EB_RATE_PER_UNIT = 8;
 const BATTERY_COST_PER_KWH = 15000;
+const PANELS_PER_KW = 3;
 
 const SOLAR_FACTORS = {
   Chennai: 5.5,
@@ -53,27 +100,48 @@ const SOLAR_FACTORS = {
   Default: 4.5,
 };
 
-const DUTY_CYCLE = {
-  'Refrigerator': 0.35,
-};
+const SYSTEM_SLABS = [1, 2, 3, 5, 10];
 
-const EFFICIENCY_FACTOR = {
-  'Air Conditioner': 0.8,
-};
+function roundToSlab(kw) {
+  if (kw <= 1) return 1;
+  if (kw <= 2) return 2;
+  if (kw <= 3) return 3;
+  if (kw <= 5) return 5;
+  if (kw <= 10) return 10;
+  return Math.ceil(kw);
+}
 
-const MAX_HOURS = {
-  'Washing Machine': 2,
-};
+function calculateSubsidy(kw, systemCost) {
+  const costPerKw = systemCost / kw;
+  let subsidy = 0;
+  if (kw <= 2) {
+    subsidy = systemCost * 0.4;
+  } else if (kw <= 3) {
+    const costFirst2kW = 2 * costPerKw;
+    const costRemaining = systemCost - costFirst2kW;
+    subsidy = costFirst2kW * 0.4 + costRemaining * 0.2;
+  } else {
+    const costFirst3kW = 3 * costPerKw;
+    subsidy = costFirst3kW * 0.3;
+  }
+  return Math.round(subsidy);
+}
 
-const BLDC_FAN_KEYWORDS = ['bldc', 'ceiling fan', 'fan'];
+export function getApplianceWattOptions(name) {
+  return APPLIANCE_WATTS[name] || [50, 100, 200, 500, 1000];
+}
+
+export function getDefaultWatt(name) {
+  return DEFAULT_WATTS[name] || 100;
+}
 
 export function createInitialRows() {
   return [
     ...DEFAULT_APPLIANCES.map((a, i) => ({
       id: `default-${i}`,
       name: a.name,
-      wattDropdown: getClosestWatt(a.watts),
-      customWatt: isExactWatt(a.watts) ? '' : String(a.watts),
+      watt: getDefaultWatt(a.name),
+      isCustomWatt: false,
       quantity: 1,
       hours: a.hours,
       isOther: false,
@@ -82,8 +150,8 @@ export function createInitialRows() {
     ...Array.from({ length: OTHER_ROWS }, (_, i) => ({
       id: `other-${i}`,
       name: '',
-      wattDropdown: '',
-      customWatt: '',
+      watt: 0,
+      isCustomWatt: true,
       quantity: 1,
       hours: 2,
       isOther: true,
@@ -92,72 +160,34 @@ export function createInitialRows() {
   ];
 }
 
-function getClosestWatt(watts) {
-  if (WATT_OPTIONS.includes(watts)) return String(watts);
-  return 'other';
-}
-
-function isExactWatt(watts) {
-  return WATT_OPTIONS.includes(watts);
-}
-
-export function getWattForRow(row) {
-  if (row.wattDropdown === 'other') {
-    const custom = parseFloat(row.customWatt);
-    return isNaN(custom) || custom <= 0 ? 0 : custom;
+function getEffectiveWatt(row) {
+  let watt = row.watt || 0;
+  if (isNaN(watt) || watt < 0) return 0;
+  if (row.isBLDC) {
+    watt = watt * 0.6;
   }
-  const dropdown = parseInt(row.wattDropdown, 10);
-  return isNaN(dropdown) ? 0 : dropdown;
+  return watt;
 }
 
 function getEffectiveHours(row) {
   let hours = parseFloat(row.hours) || 0;
   const name = row.name || '';
-
-  if (DUTY_CYCLE[name]) {
-    hours = hours * DUTY_CYCLE[name];
+  if (name === 'Refrigerator') {
+    hours = hours * 0.35;
   }
-
-  if (MAX_HOURS[name] && hours > MAX_HOURS[name]) {
-    hours = MAX_HOURS[name];
+  if (name === 'Air Conditioner') {
+    // efficiency already handled in watt
   }
-
+  if (name === 'Washing Machine' && hours > 2) {
+    hours = 2;
+  }
   return hours;
 }
 
-function getEffectiveWatt(row) {
-  let watt = getWattForRow(row);
-  const name = row.name || '';
-
-  if (EFFICIENCY_FACTOR[name]) {
-    watt = watt * EFFICIENCY_FACTOR[name];
-  }
-
-  if (row.isBLDC || BLDC_FAN_KEYWORDS.some(kw => name.toLowerCase().includes(kw))) {
-    if (row.isBLDC) {
-      watt = watt * 0.6;
-    }
-  }
-
-  return watt;
-}
-
 export function calculateRowLoad(row) {
-  const effectiveWatt = getEffectiveWatt(row);
+  const watt = getEffectiveWatt(row);
   const qty = parseInt(row.quantity, 10) || 0;
-  return effectiveWatt * qty;
-}
-
-export function calculateRowAdjustedLoad(row) {
-  const effectiveWatt = getEffectiveWatt(row);
-  const effectiveHours = getEffectiveHours(row);
-  const qty = parseInt(row.quantity, 10) || 0;
-  return {
-    effectiveWatt: Math.round(effectiveWatt * 100) / 100,
-    effectiveHours: Math.round(effectiveHours * 100) / 100,
-    adjustedLoad: Math.round(effectiveWatt * qty * 100) / 100,
-    dailyConsumption: Math.round((effectiveWatt * qty * effectiveHours) / 1000 * 100) / 100,
-  };
+  return watt * qty;
 }
 
 export function getSolarFactor(city) {
@@ -168,40 +198,46 @@ export function getSolarFactor(city) {
 
 export function calculateAllRows(rows, city, includeBattery = false) {
   let totalLoad = 0;
-  let weightedHoursSum = 0;
+  let dailyConsumption = 0;
   let validRows = 0;
   const applianceDetails = [];
 
   rows.forEach((row) => {
-    const rawLoad = getWattForRow(row) * (parseInt(row.quantity, 10) || 0);
-    if (rawLoad > 0) {
-      const adjusted = calculateRowAdjustedLoad(row);
-      totalLoad += adjusted.adjustedLoad;
-      weightedHoursSum += adjusted.adjustedLoad * adjusted.effectiveHours;
+    const rawWatt = row.watt || 0;
+    const qty = parseInt(row.quantity, 10) || 0;
+    if (rawWatt > 0 && qty > 0) {
+      const effectiveWatt = getEffectiveWatt(row);
+      const effectiveHours = getEffectiveHours(row);
+      const adjustedLoad = effectiveWatt * qty;
+      const rowDailyKwh = (effectiveWatt * qty * effectiveHours) / 1000;
+
+      totalLoad += adjustedLoad;
+      dailyConsumption += rowDailyKwh;
       validRows++;
+
       applianceDetails.push({
         name: row.name || 'Unknown',
-        watt: getWattForRow(row),
-        effectiveWatt: adjusted.effectiveWatt,
-        quantity: parseInt(row.quantity, 10) || 0,
+        watt: rawWatt,
+        quantity: qty,
         hours: parseFloat(row.hours) || 0,
-        effectiveHours: adjusted.effectiveHours,
-        adjustedLoad: adjusted.adjustedLoad,
-        dailyConsumption: adjusted.dailyConsumption,
+        effectiveWatt: Math.round(effectiveWatt * 100) / 100,
+        effectiveHours: Math.round(effectiveHours * 100) / 100,
+        adjustedLoad: Math.round(adjustedLoad * 100) / 100,
+        dailyConsumption: Math.round(rowDailyKwh * 100) / 100,
         isBLDC: !!row.isBLDC,
       });
     }
   });
 
-  const dailyUnits = weightedHoursSum / 1000;
-  const solarFactor = getSolarFactor(city);
-  const monthlyUnits = dailyUnits * 30;
-  const requiredKw = dailyUnits / solarFactor;
-  const estimatedCost = Math.round(requiredKw * COST_PER_KW);
+  const monthlyUnits = Math.round(dailyConsumption * 30 * 100) / 100;
+  const solarKw = monthlyUnits / 120;
+  const recommendedKw = roundToSlab(solarKw);
+  const estimatedCost = Math.round(recommendedKw * COST_PER_KW);
+  const subsidy = calculateSubsidy(recommendedKw, estimatedCost);
 
-  const batterySize = includeBattery ? Math.round(dailyUnits * 0.5 * 10) / 10 : 0;
+  const batterySize = includeBattery ? Math.round(dailyConsumption * 0.5 * 10) / 10 : 0;
   const batteryCost = Math.round(batterySize * BATTERY_COST_PER_KWH);
-  const totalCost = estimatedCost + batteryCost;
+  const totalCost = estimatedCost + batteryCost - subsidy;
 
   const monthlySavings = Math.round(monthlyUnits * EB_RATE_PER_UNIT);
   const yearlySavings = monthlySavings * 12;
@@ -220,11 +256,13 @@ export function calculateAllRows(rows, city, includeBattery = false) {
 
   return {
     totalLoad: Math.round(totalLoad),
-    dailyUnits: Math.round(dailyUnits * 100) / 100,
-    monthlyUnits: Math.round(monthlyUnits * 100) / 100,
-    requiredKw: Math.round(requiredKw * 100) / 100,
-    solarFactor,
+    dailyUnits: Math.round(dailyConsumption * 100) / 100,
+    monthlyUnits,
+    solarKw: Math.round(solarKw * 100) / 100,
+    recommendedKw,
+    solarFactor: getSolarFactor(city),
     estimatedCost,
+    subsidy,
     batteryIncluded: includeBattery,
     batterySize,
     batteryCost,
@@ -238,39 +276,58 @@ export function calculateAllRows(rows, city, includeBattery = false) {
   };
 }
 
-export function calculateSolarRecommendation(dailyUnits, city) {
-  const solarFactor = getSolarFactor(city);
-  const requiredKw = dailyUnits / solarFactor;
-  const estimatedCost = Math.round(requiredKw * COST_PER_KW);
-  const monthlyUnits = dailyUnits * 30;
+export function calculateSolarFromBill(monthlyUnits) {
+  const solarKw = monthlyUnits / 120;
+  const recommendedKw = roundToSlab(solarKw);
+  const estimatedCost = Math.round(recommendedKw * COST_PER_KW);
+  const subsidy = calculateSubsidy(recommendedKw, estimatedCost);
+  const panels = Math.round(recommendedKw * PANELS_PER_KW);
+  const dailyUnits = Math.round((monthlyUnits / 30) * 100) / 100;
   const monthlySavings = Math.round(monthlyUnits * EB_RATE_PER_UNIT);
   const yearlySavings = monthlySavings * 12;
+  const totalCost = estimatedCost - subsidy;
+  const paybackYears = yearlySavings > 0 ? Math.round((totalCost / yearlySavings) * 10) / 10 : 0;
+
+  const roiData = [];
+  let cumulativeSavings = 0;
+  for (let year = 0; year <= 25; year++) {
+    cumulativeSavings += yearlySavings;
+    roiData.push({
+      year,
+      cumulativeSavings: Math.round(cumulativeSavings),
+      netValue: Math.round(cumulativeSavings - totalCost),
+    });
+  }
 
   return {
-    requiredKw: Math.round(requiredKw * 100) / 100,
+    solarKw: Math.round(solarKw * 100) / 100,
+    recommendedKw,
     estimatedCost,
+    subsidy,
+    totalCost,
+    panels,
+    dailyUnits,
+    monthlyUnits,
     monthlySavings,
     yearlySavings,
-    solarFactor,
+    paybackYears,
+    roiData,
   };
 }
 
 export function getApplianceSummary(rows) {
   return rows
-    .filter((r) => getWattForRow(r) > 0 && r.name)
+    .filter((r) => (r.watt || 0) > 0 && r.name)
     .map((r) => {
-      const adjusted = calculateRowAdjustedLoad(r);
+      const qty = parseInt(r.quantity, 10) || 0;
       return {
         name: r.name,
-        watt: getWattForRow(r),
-        effectiveWatt: adjusted.effectiveWatt,
-        quantity: parseInt(r.quantity, 10) || 0,
+        watt: r.watt,
+        quantity: qty,
         hours: parseFloat(r.hours) || 0,
-        effectiveHours: adjusted.effectiveHours,
-        adjustedLoad: adjusted.adjustedLoad,
-        isBLDC: !!r.isBLDC,
+        adjustedLoad: getEffectiveWatt(r) * qty,
       };
     });
 }
 
-export { WATT_OPTIONS, COST_PER_KW, EB_RATE_PER_UNIT, SOLAR_FACTORS, BATTERY_COST_PER_KWH };
+export { APPLIANCE_WATTS, COST_PER_KW, EB_RATE_PER_UNIT, SOLAR_FACTORS, BATTERY_COST_PER_KWH, PANELS_PER_KW, SYSTEM_SLABS };
