@@ -228,6 +228,7 @@ export function calculateAllRows(rows, city, includeBattery = false) {
 
   const monthlyUnits = Math.round(dailyConsumption * 30 * 100) / 100;
   const solarKw = monthlyUnits / 120;
+  console.log('FINAL solarKW:', solarKw);
   const recommendedKw = roundToSlab(solarKw);
   const estimatedCost = Math.round(recommendedKw * COST_PER_KW);
   const subsidy = calculateSubsidy(recommendedKw, estimatedCost);
@@ -275,6 +276,7 @@ export function calculateAllRows(rows, city, includeBattery = false) {
 
 export function calculateSolarFromBill(monthlyUnits) {
   const solarKw = monthlyUnits / 120;
+  console.log('FINAL solarKW:', solarKw);
   const recommendedKw = roundToSlab(solarKw);
   const estimatedCost = Math.round(recommendedKw * COST_PER_KW);
   const subsidy = calculateSubsidy(recommendedKw, estimatedCost);
