@@ -6,6 +6,7 @@ import blogRoutes from './routes/blog.js';
 import sitemapRoutes from './routes/sitemap.js';
 import authRoutes from './routes/auth.js';
 import calculatorRoutes from './routes/calculator.js';
+import solarV2Routes from './routes/solarV2.js';
 import { createBlogTable, getBlogCount } from './models/blog.js';
 import { createUsersTable, getUserByEmail, createUser } from './models/users.js';
 import { seedBlogs } from './scripts/seedBlogs.js';
@@ -37,6 +38,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api', sitemapRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/calculator', calculatorRoutes);
+app.use('/api/v2/solar', solarV2Routes);
 
 app.get('/', async (req, res) => {
   try {
