@@ -3,14 +3,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Calculator, Sun, Battery, Zap, IndianRupee, Clock, 
-  ArrowRight, CheckCircle, MapPin, TrendingDown, PiggyBank, RotateCcw, Power,
+  CheckCircle, MapPin, TrendingDown, PiggyBank, RotateCcw, Power,
   ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import { 
   createInitialRows, calculateAllRows, calculateRowLoad,
-  getApplianceSummary, WATT_OPTIONS, getSolarFactor, SOLAR_FACTORS
+  getApplianceSummary, WATT_OPTIONS, getSolarFactor
 } from '../../utils/loadCalculator';
 import api from '../../services/api';
+
+const SYSTEM_SLABS = [1, 2, 3, 5, 10];
+
+function roundToSlab(kw) {
+  if (kw <= 1) return 1;
+  if (kw <= 2) return 2;
+  if (kw <= 3) return 3;
+  if (kw <= 5) return 5;
+  if (kw <= 10) return 10;
+  return Math.ceil(kw);
+}
+
+function calculateSubsidy(kw, systemCost) {
+  const costPerKw = systemCost / kw;
+  let subsidy = 0;
+  if (kw <= 2) {
+    subsidy = systemCost * 0.4;
+  } else if (kw <= 3) {
+    const costFirst2kW = 2 * costPerKw;
+    const costRemaining = systemCost - costFirst2kW;
+    subsidy = costFirst2kW * 0.4 + costRemaining * 0.2;
+  } else {
+    const costFirst3kW = 3 * costPerKw;
+    subsidy = costFirst3kW * 0.3;
+  }
+  return Math.round(subsidy);
+}
 
 const SolarCalculator = () => {
   const navigate = useNavigate();
@@ -52,15 +79,19 @@ const SolarCalculator = () => {
   }, []);
 
   const calculateSystem = () => {
-    let units = parseFloat(formData.monthlyUnits) || 0;
+    let monthlyUnits = parseFloat(formData.monthlyUnits) || 0;
     let applianceData = null;
     let solarData = null;
     let roiData = null;
     let batteryInfo = null;
     let paybackYears = 0;
+    let systemKw = 0;
+    let estimatedCost = 0;
 
     if (useApplianceCalc && loadResults && loadResults.validRows > 0) {
-      units = loadResults.monthlyUnits;
+      monthlyUnits = loadResults.monthlyUnits;
+      systemKw = loadResults.requiredKw;
+      estimatedCost = loadResults.estimatedCost;
       applianceData = {
         appliances: getApplianceSummary(rows),
         totalLoad: loadResults.totalLoad,
@@ -84,32 +115,37 @@ const SolarCalculator = () => {
       paybackYears = loadResults.paybackYears;
     }
 
-    if (units <= 0) return;
+    if (monthlyUnits <= 0) return;
 
     setCalculating(true);
     
     setTimeout(() => {
-      const dailyUnits = units / 30;
+      const dailyUnits = monthlyUnits / 30;
       const city = formData.location || '';
-      const solarFactor = useApplianceCalc ? loadResults.solarFactor : getSolarFactor(city);
-      const systemKw = (dailyUnits * 1.2).toFixed(2);
-      const panelWatts = 550;
-      const panels = Math.ceil((systemKw * 1000) / panelWatts);
+      const solarFactor = useApplianceCalc ? (loadResults?.solarFactor || 4.5) : getSolarFactor(city);
+
+      if (!useApplianceCalc) {
+        systemKw = monthlyUnits / 120;
+        estimatedCost = Math.round(systemKw * 50000);
+      }
+
+      const recommendedKw = roundToSlab(systemKw);
+      const fullOffsetKw = Math.ceil(systemKw * 10) / 10;
+      const panels = Math.ceil((systemKw * 1000) / 550);
       
-      const costPerKw = units > 500 ? 45000 : units > 300 ? 50000 : 55000;
-      const systemCost = Math.round(systemKw * costPerKw);
+      const systemCost = useApplianceCalc ? estimatedCost : Math.round(systemKw * 50000);
       const batteryCost = batteryInfo ? batteryInfo.cost : 0;
       const totalCost = systemCost + batteryCost;
       
-      const subsidy = totalCost * 0.4;
+      const subsidy = calculateSubsidy(systemKw, systemCost);
       const finalCost = totalCost - subsidy;
       
-      const monthlySavings = solarData ? solarData.monthlySavings : Math.round(units * 8);
+      const monthlySavings = solarData ? solarData.monthlySavings : Math.round(monthlyUnits * 8);
       const annualSavings = monthlySavings * 12;
       const calcPayback = paybackYears || (annualSavings > 0 ? Math.round((finalCost / annualSavings) * 10) / 10 : 0);
       
-      const batteryNeeded = dailyUnits > 10 ? '10kWh' : dailyUnits > 5 ? '5kWh' : '3kWh';
-      const batteryPrice = batteryNeeded === '10kWh' ? 150000 : batteryNeeded === '5kWh' ? 80000 : 50000;
+      const batterySize = includeBattery ? Math.round(dailyUnits * 0.5 * 10) / 10 : 0;
+      const batteryPrice = Math.round(batterySize * 15000);
 
       let roiChartData = roiData || [];
       if (!roiData) {
@@ -122,7 +158,9 @@ const SolarCalculator = () => {
       }
 
       setResults({
-        systemKw,
+        recommendedKw,
+        fullOffsetKw,
+        systemKw: recommendedKw,
         panels,
         systemCost,
         subsidy,
@@ -130,17 +168,17 @@ const SolarCalculator = () => {
         monthlySavings,
         annualSavings,
         paybackYears: calcPayback,
-        batteryNeeded,
+        batterySize,
         batteryCost: batteryPrice,
-        efficiency: units > 300 ? 'High' : units > 150 ? 'Medium' : 'Standard',
+        efficiency: monthlyUnits > 300 ? 'High' : monthlyUnits > 150 ? 'Medium' : 'Standard',
         fromApplianceCalc: useApplianceCalc && loadResults?.validRows > 0,
         applianceData,
         solarData,
         dailyUnits: Math.round(dailyUnits * 100) / 100,
-        monthlyUnits: Math.round(units * 100) / 100,
+        monthlyUnits: Math.round(monthlyUnits * 100) / 100,
         solarFactor,
         roiData: roiChartData,
-        batteryIncluded: !!batteryInfo,
+        batteryIncluded: includeBattery || !!batteryInfo,
         totalCost,
       });
       setCalculating(false);
@@ -183,17 +221,25 @@ const SolarCalculator = () => {
         monthlyUnits: calcResults.monthlyUnits,
         totalLoad: calcResults.applianceData?.totalLoad || 0,
         dailyUnits: calcResults.dailyUnits,
-        solarKw: calcResults.solarData?.requiredKw || parseFloat(calcResults.systemKw),
+        solarKw: calcResults.solarData?.requiredKw || calcResults.recommendedKw,
         solarFactor: calcResults.solarFactor,
         estimatedCost: calcResults.solarData?.estimatedCost || calcResults.systemCost,
         savingsMonthly: calcResults.monthlySavings,
         savingsYearly: calcResults.annualSavings,
         batteryIncluded: calcResults.batteryIncluded,
-        batterySize: calcResults.applianceData ? loadResults?.batterySize || 0 : 0,
-        batteryCost: calcResults.batteryIncluded ? calcResults.systemCost - calcResults.solarData?.estimatedCost || 0 : 0,
+        batterySize: calcResults.batteryIncluded ? (loadResults?.batterySize || calcResults.batterySize) : 0,
+        batteryCost: calcResults.batteryIncluded ? (loadResults?.batteryCost || calcResults.batteryCost) : 0,
         totalCost: calcResults.totalCost,
         paybackYears: calcResults.paybackYears,
-        appliances: calcResults.applianceData?.appliances || [],
+        appliances: (calcResults.applianceData?.appliances || []).map(a => ({
+          name: a.name,
+          watt: a.watt,
+          effectiveWatt: a.effectiveWatt,
+          quantity: a.quantity,
+          hours: a.hours,
+          effectiveHours: a.effectiveHours,
+          adjustedLoad: a.adjustedLoad,
+        })),
         roiData: calcResults.roiData || [],
       };
       await api.post('/calculator/submit', payload);
@@ -214,15 +260,15 @@ const SolarCalculator = () => {
       roofType: formData.roofType,
       roofArea: formData.roofArea,
       solarData: results.solarData || {
-        requiredKw: parseFloat(results.systemKw),
+        requiredKw: results.recommendedKw,
         estimatedCost: results.systemCost,
         monthlySavings: results.monthlySavings,
         yearlySavings: results.annualSavings,
       },
       applianceData: results.applianceData || null,
       batteryData: results.batteryIncluded ? {
-        size: loadResults?.batterySize || 0,
-        cost: loadResults?.batteryCost || 0,
+        size: loadResults?.batterySize || results.batterySize || 0,
+        cost: loadResults?.batteryCost || results.batteryCost || 0,
       } : null,
       paybackYears: results.paybackYears,
     };
@@ -321,7 +367,7 @@ const SolarCalculator = () => {
                 />
                 {formData.location && (
                   <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> Solar factor: {getSolarFactor(formData.location)} kWh/kW/day
+                    <MapPin className="w-3 h-3" /> Sun hours: {getSolarFactor(formData.location)} hrs/day
                   </p>
                 )}
               </div>
@@ -475,14 +521,14 @@ const SolarCalculator = () => {
                           <div className="grid grid-cols-3 gap-3 text-center">
                             <div>
                               <div className="text-lg font-bold text-green-700">{loadResults.totalLoad}W</div>
-                              <div className="text-xs text-green-600">Total Load</div>
+                              <div className="text-xs text-green-600">Connected Load</div>
                             </div>
                             <div>
-                              <div className="text-lg font-bold text-green-700">{loadResults.dailyUnits} kWh</div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.dailyUnits} units</div>
                               <div className="text-xs text-green-600">Daily</div>
                             </div>
                             <div>
-                              <div className="text-lg font-bold text-green-700">{loadResults.monthlyUnits} kWh</div>
+                              <div className="text-lg font-bold text-green-700">{loadResults.monthlyUnits} units</div>
                               <div className="text-xs text-green-600">Monthly</div>
                             </div>
                           </div>
@@ -543,16 +589,24 @@ const SolarCalculator = () => {
                   <TrendingDown className="w-5 h-5 text-green-500" /> Your Solar Report
                 </h2>
 
+                <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">Recommended system is based on your actual usage</p>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl p-5 text-center">
-                    <div className="text-4xl font-bold text-primary-900 mb-1">{results.systemKw}</div>
-                    <div className="text-sm font-semibold text-primary-800">kW System</div>
+                    <div className="text-4xl font-bold text-primary-900 mb-1">{results.recommendedKw}</div>
+                    <div className="text-sm font-semibold text-primary-800">kW Recommended</div>
                   </div>
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
                     <div className="text-4xl font-bold text-white mb-1">{results.panels}</div>
-                    <div className="text-sm font-semibold text-white/80">Panels</div>
+                    <div className="text-sm font-semibold text-white/80">Panels (550W)</div>
                   </div>
                 </div>
+
+                {results.fullOffsetKw !== results.recommendedKw && (
+                  <div className="text-center text-sm text-gray-500">
+                    Full offset: <strong>{results.fullOffsetKw} kW</strong>
+                  </div>
+                )}
 
                 {results.fromApplianceCalc && results.solarData && (
                   <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 space-y-3">
@@ -562,20 +616,20 @@ const SolarCalculator = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div className="bg-white rounded-lg p-3">
-                        <div className="text-xs text-gray-500">Total Load</div>
+                        <div className="text-xs text-gray-500">Connected Load</div>
                         <div className="font-bold text-gray-900">{results.applianceData?.totalLoad || '-'} W</div>
                       </div>
                       <div className="bg-white rounded-lg p-3">
                         <div className="text-xs text-gray-500">Daily Usage</div>
-                        <div className="font-bold text-gray-900">{results.dailyUnits} kWh</div>
+                        <div className="font-bold text-gray-900">{results.dailyUnits} units</div>
                       </div>
                       <div className="bg-white rounded-lg p-3">
                         <div className="text-xs text-gray-500">Monthly Units</div>
-                        <div className="font-bold text-gray-900">{results.monthlyUnits} kWh</div>
+                        <div className="font-bold text-gray-900">{results.monthlyUnits} units</div>
                       </div>
                       <div className="bg-white rounded-lg p-3">
-                        <div className="text-xs text-gray-500">Solar Factor</div>
-                        <div className="font-bold text-green-700">{results.solarFactor} kWh/kW</div>
+                        <div className="text-xs text-gray-500">Sun Hours</div>
+                        <div className="font-bold text-green-700">{results.solarFactor} hrs/day</div>
                       </div>
                     </div>
                   </div>
@@ -601,19 +655,19 @@ const SolarCalculator = () => {
                   <div className="bg-green-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-500">Govt Subsidy (40%)</span>
+                      <span className="text-sm text-gray-500">PM Surya Subsidy</span>
                     </div>
                     <div className="text-xl font-bold text-green-600">-₹{results.subsidy.toLocaleString()}</div>
                   </div>
                 </div>
 
-                {results.batteryIncluded && results.totalCost > results.systemCost && (
+                {results.batteryIncluded && results.batterySize > 0 && (
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                     <div className="flex items-center gap-2 mb-2">
                       <Battery className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-blue-700 font-medium">Battery Backup Included</span>
+                      <span className="text-sm text-blue-700 font-medium">Battery Backup</span>
                     </div>
-                    <div className="text-lg font-bold text-blue-800">+₹{(results.totalCost - results.systemCost).toLocaleString()}</div>
+                    <div className="text-lg font-bold text-blue-800">{results.batterySize} kWh (+₹{results.batteryCost.toLocaleString()})</div>
                   </div>
                 )}
 
@@ -633,13 +687,12 @@ const SolarCalculator = () => {
                     </div>
                     <div className="text-xl font-bold text-amber-700">{results.paybackYears} Years</div>
                   </div>
-                  <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="bg-emerald-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <Battery className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-gray-500">Battery (Optional)</span>
+                      <TrendingDown className="w-4 h-4 text-emerald-500" />
+                      <span className="text-sm text-gray-500">Efficiency</span>
                     </div>
-                    <div className="text-xl font-bold text-blue-700">{results.batteryNeeded}</div>
-                    <div className="text-xs text-blue-600">+₹{results.batteryCost.toLocaleString()}</div>
+                    <div className="text-xl font-bold text-emerald-700">{results.efficiency}</div>
                   </div>
                 </div>
 
@@ -718,7 +771,7 @@ const SolarCalculator = () => {
                   <MapPin className="w-5 h-5" /> Get Free Inspection
                 </Link>
 
-                <p className="text-xs text-center text-gray-500">*Based on standard solar calculations. Actual results may vary based on site conditions.</p>
+                <p className="text-xs text-center text-gray-500">*Based on standard solar calculations for India. Actual results may vary based on site conditions, shading, and panel orientation.</p>
               </div>
             )}
           </motion.div>
