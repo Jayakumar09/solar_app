@@ -33,6 +33,10 @@ const SolarCalculator = () => {
   const [submitting, setSubmitting] = useState(false);
   const calcTimeout = useRef(null);
 
+  function getCorrectSolarKW(monthlyUnits) {
+    return monthlyUnits / 120;
+  }
+
   const debouncedCalc = useCallback(() => {
     if (calcTimeout.current) clearTimeout(calcTimeout.current);
     calcTimeout.current = setTimeout(() => {
@@ -218,6 +222,11 @@ const SolarCalculator = () => {
   };
 
   const effectiveMonthlyUnits = useApplianceCalc && loadResults ? loadResults.monthlyUnits : (parseFloat(formData.monthlyUnits) || 0);
+  const monthlyUnits = results?.monthlyUnits || effectiveMonthlyUnits;
+  const correctKW = getCorrectSolarKW(monthlyUnits);
+  const correctPanels = correctKW * 3;
+  const correctCost = correctKW * 50000;
+  const correctTotalCost = Math.max(correctCost - (results?.subsidy || 0) + (results?.batteryCost || 0), 0);
 
   const maxROI = results?.roiData ? Math.max(...results.roiData.map(d => d.cumulativeSavings)) : 0;
 
@@ -546,11 +555,11 @@ const SolarCalculator = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl p-5 text-center">
-                    <div className="text-4xl font-bold text-primary-900 mb-1">{results.recommendedKw}</div>
+                    <div className="text-4xl font-bold text-primary-900 mb-1">{correctKW.toFixed(2)}</div>
                     <div className="text-sm font-semibold text-primary-800">kW Recommended</div>
                   </div>
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
-                    <div className="text-4xl font-bold text-white mb-1">{results.panels}</div>
+                    <div className="text-4xl font-bold text-white mb-1">{Math.round(correctPanels)}</div>
                     <div className="text-sm font-semibold text-white/80">Panels (550W)</div>
                   </div>
                 </div>
@@ -597,7 +606,7 @@ const SolarCalculator = () => {
                       <IndianRupee className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-500">System Cost</span>
                     </div>
-                    <div className="text-xl font-bold text-gray-900">₹{results.estimatedCost.toLocaleString()}</div>
+                    <div className="text-xl font-bold text-gray-900">₹{Math.round(correctCost).toLocaleString()}</div>
                   </div>
                   <div className="bg-green-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -623,7 +632,7 @@ const SolarCalculator = () => {
                     <span className="text-white/80">Final Cost After Subsidy</span>
                     <Clock className="w-5 h-5 text-white/80" />
                   </div>
-                  <div className="text-3xl font-bold">₹{results.totalCost.toLocaleString()}</div>
+                  <div className="text-3xl font-bold">₹{Math.round(correctTotalCost).toLocaleString()}</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
