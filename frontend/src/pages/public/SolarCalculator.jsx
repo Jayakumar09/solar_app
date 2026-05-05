@@ -612,27 +612,29 @@ const SolarCalculator = () => {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
-                  <h3 className="font-semibold text-gray-800 mb-3">Load Calculator Summary</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white rounded-lg p-3">
-                      <div className="text-gray-500">Total Load</div>
-                      <div className="font-bold text-gray-900">{totalLoadW.toFixed(0)} W</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3">
-                      <div className="text-gray-500">Daily Usage</div>
-                      <div className="font-bold text-gray-900">{dailyUsageKwh.toFixed(2)} kWh</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3">
-                      <div className="text-gray-500">Monthly Units</div>
-                      <div className="font-bold text-gray-900">{effectiveMonthlyUnits.toFixed(2)} kWh</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3">
-                      <div className="text-gray-500">Recommended</div>
-                      <div className="font-bold text-gray-900">{recommendedKW.toFixed(2)} kW</div>
+                {useAppliances && (
+                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                    <h3 className="font-semibold text-gray-800 mb-3">Load Calculator Summary</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-gray-500">Total Load</div>
+                        <div className="font-bold text-gray-900">{totalLoadW.toFixed(0)} W</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-gray-500">Daily Usage</div>
+                        <div className="font-bold text-gray-900">{dailyUsageKwh.toFixed(2)} kWh</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-gray-500">Monthly Units</div>
+                        <div className="font-bold text-gray-900">{effectiveMonthlyUnits.toFixed(2)} kWh</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-gray-500">Recommended</div>
+                        <div className="font-bold text-gray-900">{recommendedKW.toFixed(2)} kW</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
                   <div className="grid sm:grid-cols-3 gap-3 text-center">
