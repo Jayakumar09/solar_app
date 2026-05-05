@@ -4,30 +4,51 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Calculator,
   CheckCircle,
-  Loader2,
   MapPin,
   RotateCcw,
   Sun,
   Zap,
 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const APPLIANCE_LIST = [
+  'Lamp',
+  'Ceiling Fan',
+  'Table Fan',
+  'TV',
+  'Geyser',
+  'Heater',
+  'Immersion Rod',
+  'Refrigerator',
+  'Washing Machine',
+  'Water Pump',
+  'Air Conditioner',
+  'Electric Iron',
+  'Mixer',
+  'Personal Computer',
+  'Dhobi Iron',
+  'Stove',
+  'Electric Cooker',
+  'Toaster',
+  'Cloth Drier / Spin Drier',
+  'Mobile Charger',
+  'Oven 2 plates / 3 plates',
+  'Cooking Range',
+  'BLDC Ceiling Fan',
+  'Grinder',
+  'Electric Stove',
+];
 
-const emptyRow = (id) => ({
+const emptyRow = (id, name = '') => ({
   id,
-  name: '',
+  name,
   watt: '',
   quantity: '1',
   hours: '',
 });
 
-const initialRows = () => [
-  { ...emptyRow(1), name: 'Light', watt: '20', quantity: '6', hours: '6' },
-  { ...emptyRow(2), name: 'Fan', watt: '75', quantity: '4', hours: '8' },
-  { ...emptyRow(3), name: 'TV', watt: '120', quantity: '1', hours: '4' },
-  { ...emptyRow(4), name: 'Refrigerator', watt: '200', quantity: '1', hours: '8' },
-  emptyRow(5),
-];
+const initialRows = () => APPLIANCE_LIST.map((name, index) => 
+  emptyRow(index + 1, name)
+);
 
 const toPositiveNumber = (value) => {
   const number = Number(value);
@@ -41,18 +62,8 @@ const getApplianceMonthlyUnits = (rows) => {
     const hours = toPositiveNumber(row.hours);
     return total + (watt * quantity * hours) / 1000;
   }, 0);
-
   return dailyUnits * 30;
 };
-
-const getAppliancePayload = (rows) => rows
-  .filter((row) => toPositiveNumber(row.watt) > 0 && toPositiveNumber(row.quantity) > 0 && toPositiveNumber(row.hours) > 0)
-  .map((row) => ({
-    name: row.name,
-    watt: toPositiveNumber(row.watt),
-    quantity: toPositiveNumber(row.quantity),
-    hours: toPositiveNumber(row.hours),
-  }));
 
 const SolarCalculator = () => {
   const navigate = useNavigate();
@@ -64,12 +75,25 @@ const SolarCalculator = () => {
   const [useAppliances, setUseAppliances] = useState(true);
   const [rows, setRows] = useState(initialRows);
   const [result, setResult] = useState(null);
-  const [calculating, setCalculating] = useState(false);
 
   const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
-  const activeMonthlyUnits = useAppliances
-    ? applianceMonthlyUnits
-    : toPositiveNumber(monthlyUnitsInput);
+
+  const calculateLocal = (units) => {
+    const solarKW = units / 120;
+    const panels = Math.round(solarKW * 2);
+    const dailyUnits = Math.round((units / 30) * 100) / 100;
+    const monthlySavings = Math.round(units * 8);
+    const yearlySavings = monthlySavings * 12;
+
+    return {
+      solarKW: parseFloat(solarKW.toFixed(2)),
+      panels,
+      dailyUnits,
+      monthlyUnits: units,
+      monthlySavings,
+      yearlySavings,
+    };
+  };
 
   const updateRow = (id, field, value) => {
     setRows((currentRows) => currentRows.map((row) => (
@@ -79,7 +103,7 @@ const SolarCalculator = () => {
   };
 
   const addRow = () => {
-    setRows((currentRows) => [...currentRows, emptyRow(Date.now())]);
+    setRows((currentRows) => [...currentRows, emptyRow(Date.now(), '')]);
     setResult(null);
   };
 
@@ -88,7 +112,7 @@ const SolarCalculator = () => {
     setResult(null);
   };
 
-  const calculateSystem = async () => {
+  const calculateSystem = () => {
     let units = toPositiveNumber(monthlyUnitsInput);
 
     if (units <= 0) {
@@ -106,32 +130,8 @@ const SolarCalculator = () => {
       return;
     }
 
-    setCalculating(true);
-    setResult(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/v2/solar/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({
-          monthlyUnits: units,
-          appliances: useAppliances ? getAppliancePayload(rows) : [],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Solar calculation failed with ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('NEW CALC ACTIVE', data);
-      setResult(data);
-    } catch (error) {
-      console.error('Solar calculation failed:', error);
-    } finally {
-      setCalculating(false);
-    }
+    const calculationResult = calculateLocal(units);
+    setResult(calculationResult);
   };
 
   const handleGetQuote = () => {
@@ -152,7 +152,12 @@ const SolarCalculator = () => {
         },
         applianceData: useAppliances ? {
           monthlyUnits: result.monthlyUnits,
-          appliances: getAppliancePayload(rows),
+          appliances: rows.filter(r => toPositiveNumber(r.watt) > 0 && toPositiveNumber(r.quantity) > 0 && toPositiveNumber(r.hours) > 0).map(r => ({
+            name: r.name,
+            watt: toPositiveNumber(r.watt),
+            quantity: toPositiveNumber(r.quantity),
+            hours: toPositiveNumber(r.hours),
+          })),
         } : null,
       },
     });
@@ -297,6 +302,7 @@ const SolarCalculator = () => {
                                 <td className="px-3 py-2">
                                   <input
                                     type="text"
+                                    list="appliances"
                                     value={row.name}
                                     onChange={(event) => updateRow(row.id, 'name', event.target.value)}
                                     className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
@@ -337,6 +343,11 @@ const SolarCalculator = () => {
                           })}
                         </tbody>
                       </table>
+                      <datalist id="appliances">
+                        {APPLIANCE_LIST.map((appliance) => (
+                          <option key={appliance} value={appliance} />
+                        ))}
+                      </datalist>
                     </div>
 
                     <button type="button" onClick={addRow} className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
@@ -349,14 +360,9 @@ const SolarCalculator = () => {
               <button
                 type="button"
                 onClick={calculateSystem}
-                disabled={calculating || activeMonthlyUnits <= 0}
-                className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
               >
-                {calculating ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Calculating...</>
-                ) : (
-                  <><Calculator className="w-5 h-5" /> Calculate Solar</>
-                )}
+                <Calculator className="w-5 h-5" /> Calculate Solar
               </button>
             </div>
           </motion.div>
@@ -370,7 +376,7 @@ const SolarCalculator = () => {
               <div className="flex flex-col items-center justify-center h-full py-16 text-gray-400">
                 <Sun className="w-20 h-20 mb-4 opacity-30" />
                 <p className="text-lg font-medium">Enter units to see results</p>
-                <p className="text-sm">New calculator uses Monthly Units / 120</p>
+                <p className="text-sm">Uses Monthly Units / 120 formula</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -384,44 +390,42 @@ const SolarCalculator = () => {
                     <div className="text-sm font-semibold text-primary-800">kW System</div>
                   </div>
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
-                    <div className="text-4xl font-bold text-white mb-1">{Math.round(result.panels)}</div>
+                    <div className="text-4xl font-bold text-white mb-1">{result.panels}</div>
                     <div className="text-sm font-semibold text-white/80">Panels Approx</div>
                   </div>
                 </div>
 
-<div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
-                   <div className="grid sm:grid-cols-3 gap-3 text-center">
-                     <div className="bg-white rounded-xl p-4">
-                       <div className="text-xs text-gray-500">Monthly Units</div>
-                       <div className="text-xl font-bold text-gray-900">{result.monthlyUnits.toFixed(2)}</div>
-                     </div>
-                     <div className="bg-white rounded-xl p-4">
-                       <div className="text-xs text-gray-500">Daily Units</div>
-                       <div className="text-xl font-bold text-gray-900">{result.dailyUnits.toFixed(2)}</div>
-                     </div>
-                     <div className="bg-white rounded-xl p-4">
-                       <div className="text-xs text-gray-500">Formula</div>
-                       <div className="text-xl font-bold text-gray-900">Units / 120</div>
-                     </div>
-                   </div>
-                 </div>
+                <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                  <div className="grid sm:grid-cols-3 gap-3 text-center">
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-xs text-gray-500">Monthly Units</div>
+                      <div className="text-xl font-bold text-gray-900">{result.monthlyUnits.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-xs text-gray-500">Daily Units</div>
+                      <div className="text-xl font-bold text-gray-900">{result.dailyUnits.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-xs text-gray-500">Formula</div>
+                      <div className="text-xl font-bold text-gray-900">Units / 120</div>
+                    </div>
+                  </div>
+                </div>
 
-                 {result.monthlySavings > 0 && (
-                   <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
-                     <div className="grid sm:grid-cols-2 gap-3 text-center">
-                       <div className="bg-white rounded-xl p-4">
-                         <div className="text-xs text-gray-500">Monthly Savings</div>
-                         <div className="text-xl font-bold text-green-700">₹{result.monthlySavings.toLocaleString()}</div>
-                       </div>
-                       <div className="bg-white rounded-xl p-4">
-                         <div className="text-xs text-gray-500">Yearly Savings</div>
-                         <div className="text-xl font-bold text-green-700">₹{result.yearlySavings.toLocaleString()}</div>
-                       </div>
-                     </div>
-                   </div>
-                 )}
+                <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
+                  <div className="grid sm:grid-cols-2 gap-3 text-center">
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-xs text-gray-500">Monthly Savings</div>
+                      <div className="text-xl font-bold text-green-700">₹{result.monthlySavings.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-xs text-gray-500">Yearly Savings</div>
+                      <div className="text-xl font-bold text-green-700">₹{result.yearlySavings.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
 
-                 <button
+                <button
                   type="button"
                   onClick={handleGetQuote}
                   className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
