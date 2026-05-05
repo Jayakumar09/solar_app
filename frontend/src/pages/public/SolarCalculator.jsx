@@ -343,35 +343,28 @@ const SolarCalculator = () => {
                     <span className="text-amber-600 font-medium">✓ Units estimated from bill (₹{unitRate}/unit)</span>
                   ) : unitsSource === 'units' ? (
                     <span className="text-green-600 font-medium">✓ Using provided units</span>
-                  ) : (
-                    <span className="text-gray-500">Enter the monthly units from your electricity bill</span>
-                  )}
+                  ) : null}
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={currentBill}
-                  onChange={(event) => {
-                    setCurrentBill(event.target.value);
-                    if (event.target.value) setMonthlyUnitsInput('');
-                    setResult(null);
-                  }}
-                  placeholder="e.g., 5000"
-                  disabled={hasUnitsInput}
-                  className={`w-full px-4 py-3 rounded-xl border ${hasUnitsInput ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
-                />
-                <p className="text-xs mt-1">
-                  {hasUnitsInput ? (
-                    <span className="text-gray-400">Bill is ignored while units are provided</span>
-                  ) : (
-                    <span className="text-gray-500">Bill is converted to units at ₹{unitRate}/unit rate</span>
-                  )}
-                </p>
-              </div>
+              {!useAppliances && unitsSource !== 'bill' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={currentBill}
+                    onChange={(event) => {
+                      setCurrentBill(event.target.value);
+                      if (event.target.value) setMonthlyUnitsInput('');
+                      setResult(null);
+                    }}
+                    placeholder="e.g., 5000"
+                    disabled={hasUnitsInput}
+                    className={`w-full px-4 py-3 rounded-xl border ${hasUnitsInput ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
+                  />
+                </div>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -591,8 +584,8 @@ const SolarCalculator = () => {
 
                 <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
                   <h3 className="font-semibold text-gray-800 mb-3">Panel Configuration</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
+                  <div className="space-y-3">
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Panel Size</label>
                       <select
                         value={panelSize}
@@ -605,9 +598,15 @@ const SolarCalculator = () => {
                         <option value={550}>550W</option>
                       </select>
                     </div>
-                    <div className="text-center px-6 py-3 bg-white rounded-xl border border-gray-200">
-                      <div className="text-xs text-gray-500">Panels Required</div>
-                      <div className="text-xl font-bold text-gray-900">{result ? result.panels : '-'}</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center px-4 py-3 bg-white rounded-xl border border-gray-200">
+                        <div className="text-xs text-gray-500">Panels Required</div>
+                        <div className="text-2xl font-bold text-gray-900">{result ? result.panels : '-'}</div>
+                      </div>
+                      <div className="text-center px-4 py-3 bg-white rounded-xl border border-gray-200">
+                        <div className="text-xs text-gray-500">Total System</div>
+                        <div className="text-2xl font-bold text-gray-900">{result ? result.solarKW.toFixed(2) : '-'} kW</div>
+                      </div>
                     </div>
                   </div>
                 </div>
