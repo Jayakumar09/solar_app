@@ -347,22 +347,20 @@ const SolarCalculator = () => {
                 </p>
               </div>
 
-              {!useAppliances && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={currentBill}
-                    onChange={(event) => {
-                      setCurrentBill(event.target.value);
-                      setResult(null);
-                    }}
-                    placeholder="e.g., 5000"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={currentBill}
+                  onChange={(event) => {
+                    setCurrentBill(event.target.value);
+                    setResult(null);
+                  }}
+                  placeholder="e.g., 5000"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg"
+                />
+              </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
