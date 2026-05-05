@@ -346,14 +346,21 @@ const SolarCalculator = () => {
                     </div>
 
                     <div className="overflow-x-auto rounded-xl border border-gray-200">
-                      <table className="w-full min-w-[560px] text-sm">
+                      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
+                        <colgroup>
+                          <col style={{ width: '30%' }} />
+                          <col style={{ width: '20%' }} />
+                          <col style={{ width: '15%' }} />
+                          <col style={{ width: '15%' }} />
+                          <col style={{ width: '20%' }} />
+                        </colgroup>
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Appliance</th>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Watt</th>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Qty</th>
-                            <th className="text-left px-3 py-2 font-semibold text-gray-600">Hours/day</th>
-                            <th className="text-right px-3 py-2 font-semibold text-gray-600">Units/month</th>
+                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Appliance</th>
+                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Watt</th>
+                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Qty</th>
+                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Hours/day</th>
+                            <th className="text-right px-4 py-3 font-semibold text-gray-600">Units/month</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -361,16 +368,16 @@ const SolarCalculator = () => {
                             const rowUnits = (getWattValue(row) * toPositiveNumber(row.quantity) * toPositiveNumber(row.hours) * 30) / 1000;
                             return (
                               <tr key={row.id} className="border-t border-gray-100">
-                                <td className="px-3 py-2">
+                                <td className="px-4 py-2">
                                   <input
                                     type="text"
                                     list="appliances"
                                     value={row.name}
                                     onChange={(event) => updateRow(row.id, 'name', event.target.value)}
-                                    className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
                                   />
                                 </td>
-                                <td className="px-3 py-2">
+                                <td className="px-4 py-2">
                                   <div className="flex gap-1">
                                     <select
                                       value={row.wattType === 'custom' ? 'custom' : row.watt}
@@ -382,7 +389,7 @@ const SolarCalculator = () => {
                                           updateRow(row.id, 'wattType', 'preset');
                                         }
                                       }}
-                                      className="flex-1 px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
                                     >
                                       <option value="">Select</option>
                                       {(WATT_VALUES[row.name] || []).map((w) => (
@@ -402,16 +409,16 @@ const SolarCalculator = () => {
                                     )}
                                   </div>
                                 </td>
-                                <td className="px-3 py-2">
+                                <td className="px-4 py-2">
                                   <input
                                     type="number"
                                     min="0"
                                     value={row.quantity}
                                     onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
-                                    className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="qty-input"
                                   />
                                 </td>
-                                <td className="px-3 py-2">
+                                <td className="px-4 py-2">
                                   <input
                                     type="number"
                                     min="0"
@@ -419,10 +426,11 @@ const SolarCalculator = () => {
                                     step="0.5"
                                     value={row.hours}
                                     onChange={(event) => updateRow(row.id, 'hours', event.target.value)}
-                                    className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    style={{ height: '36px', minWidth: '60px' }}
                                   />
                                 </td>
-                                <td className="px-3 py-2 text-right font-semibold text-gray-700">{rowUnits.toFixed(2)}</td>
+                                <td className="px-4 py-2 text-right font-semibold text-gray-700">{rowUnits.toFixed(2)}</td>
                               </tr>
                             );
                           })}
