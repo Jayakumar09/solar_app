@@ -12,12 +12,16 @@ router.post('/calculate', (req, res) => {
   const solarKW = monthlyUnits / 120;
   const panels = solarKW * 2;
   const dailyUnits = monthlyUnits / 30;
+  const monthlySavings = Math.round(monthlyUnits * 8);
+  const yearlySavings = monthlySavings * 12;
 
   res.json({
-    solarKW,
-    panels,
-    dailyUnits,
+    solarKW: parseFloat(solarKW.toFixed(2)),
+    panels: Math.round(panels),
+    dailyUnits: parseFloat(dailyUnits.toFixed(2)),
     monthlyUnits,
+    monthlySavings,
+    yearlySavings,
   });
 });
 

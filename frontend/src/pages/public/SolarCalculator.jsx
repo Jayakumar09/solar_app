@@ -61,7 +61,7 @@ const SolarCalculator = () => {
   const [roofType, setRoofType] = useState('concrete');
   const [roofArea, setRoofArea] = useState('');
   const [location, setLocation] = useState('');
-  const [useAppliances, setUseAppliances] = useState(false);
+  const [useAppliances, setUseAppliances] = useState(true);
   const [rows, setRows] = useState(initialRows);
   const [result, setResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
@@ -89,7 +89,22 @@ const SolarCalculator = () => {
   };
 
   const calculateSystem = async () => {
-    if (activeMonthlyUnits <= 0) return;
+    let units = toPositiveNumber(monthlyUnitsInput);
+
+    if (units <= 0) {
+      const bill = toPositiveNumber(currentBill);
+      if (bill > 0) {
+        units = bill / 8;
+      }
+    }
+
+    if (useAppliances) {
+      units = applianceMonthlyUnits;
+    }
+
+    if (units <= 0) {
+      return;
+    }
 
     setCalculating(true);
     setResult(null);
@@ -100,7 +115,7 @@ const SolarCalculator = () => {
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
         body: JSON.stringify({
-          monthlyUnits: activeMonthlyUnits,
+          monthlyUnits: units,
           appliances: useAppliances ? getAppliancePayload(rows) : [],
         }),
       });
@@ -374,24 +389,39 @@ const SolarCalculator = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
-                  <div className="grid sm:grid-cols-3 gap-3 text-center">
-                    <div className="bg-white rounded-xl p-4">
-                      <div className="text-xs text-gray-500">Monthly Units</div>
-                      <div className="text-xl font-bold text-gray-900">{result.monthlyUnits.toFixed(2)}</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-4">
-                      <div className="text-xs text-gray-500">Daily Units</div>
-                      <div className="text-xl font-bold text-gray-900">{result.dailyUnits.toFixed(2)}</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-4">
-                      <div className="text-xs text-gray-500">Formula</div>
-                      <div className="text-xl font-bold text-gray-900">Units / 120</div>
-                    </div>
-                  </div>
-                </div>
+<div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                   <div className="grid sm:grid-cols-3 gap-3 text-center">
+                     <div className="bg-white rounded-xl p-4">
+                       <div className="text-xs text-gray-500">Monthly Units</div>
+                       <div className="text-xl font-bold text-gray-900">{result.monthlyUnits.toFixed(2)}</div>
+                     </div>
+                     <div className="bg-white rounded-xl p-4">
+                       <div className="text-xs text-gray-500">Daily Units</div>
+                       <div className="text-xl font-bold text-gray-900">{result.dailyUnits.toFixed(2)}</div>
+                     </div>
+                     <div className="bg-white rounded-xl p-4">
+                       <div className="text-xs text-gray-500">Formula</div>
+                       <div className="text-xl font-bold text-gray-900">Units / 120</div>
+                     </div>
+                   </div>
+                 </div>
 
-                <button
+                 {result.monthlySavings > 0 && (
+                   <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
+                     <div className="grid sm:grid-cols-2 gap-3 text-center">
+                       <div className="bg-white rounded-xl p-4">
+                         <div className="text-xs text-gray-500">Monthly Savings</div>
+                         <div className="text-xl font-bold text-green-700">₹{result.monthlySavings.toLocaleString()}</div>
+                       </div>
+                       <div className="bg-white rounded-xl p-4">
+                         <div className="text-xs text-gray-500">Yearly Savings</div>
+                         <div className="text-xl font-bold text-green-700">₹{result.yearlySavings.toLocaleString()}</div>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+
+                 <button
                   type="button"
                   onClick={handleGetQuote}
                   className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-primary-900 font-bold text-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
