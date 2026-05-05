@@ -139,10 +139,21 @@ const SolarCalculator = () => {
   const navigate = useNavigate();
   const [monthlyUnitsInput, setMonthlyUnitsInput] = useState('');
   const [currentBill, setCurrentBill] = useState('');
+  const [roofType, setRoofType] = useState('concrete');
+  const [roofArea, setRoofArea] = useState('');
+  const [location, setLocation] = useState('');
+  const [useAppliances, setUseAppliances] = useState(true);
+  const [rows, setRows] = useState(initialRows);
+  const [result, setResult] = useState(null);
+  const [panelSize, setPanelSize] = useState(500);
+
   const unitRate = 8;
+  const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
+  const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
+
   const hasUnitsInput = toPositiveNumber(monthlyUnitsInput) > 0;
   const hasBillInput = toPositiveNumber(currentBill) > 0;
-  const estimatedUnitsFromBill = hasBillInput ? Math.round((currentBill / unitRate) * 100) / 100 : 0;
+  const estimatedUnitsFromBill = hasBillInput ? Math.round((toPositiveNumber(currentBill) / unitRate) * 100) / 100 : 0;
   const effectiveMonthlyUnits = useAppliances
     ? applianceMonthlyUnits
     : hasUnitsInput
@@ -155,16 +166,7 @@ const SolarCalculator = () => {
       : hasBillInput
         ? 'bill'
         : 'none';
-  const [roofType, setRoofType] = useState('concrete');
-  const [roofArea, setRoofArea] = useState('');
-  const [location, setLocation] = useState('');
-  const [useAppliances, setUseAppliances] = useState(true);
-  const [rows, setRows] = useState(initialRows);
-  const [result, setResult] = useState(null);
-  const [panelSize, setPanelSize] = useState(500);
 
-  const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
-  const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
   const avgHoursPerDay = 8;
   const dailyFromEffective = effectiveMonthlyUnits > 0 ? effectiveMonthlyUnits / 30 : 0;
   const dailyUsageKwh = dailyFromEffective;
