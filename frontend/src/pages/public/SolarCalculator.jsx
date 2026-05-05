@@ -139,6 +139,22 @@ const SolarCalculator = () => {
   const navigate = useNavigate();
   const [monthlyUnitsInput, setMonthlyUnitsInput] = useState('');
   const [currentBill, setCurrentBill] = useState('');
+  const unitRate = 8;
+  const hasUnitsInput = toPositiveNumber(monthlyUnitsInput) > 0;
+  const hasBillInput = toPositiveNumber(currentBill) > 0;
+  const estimatedUnitsFromBill = hasBillInput ? Math.round((currentBill / unitRate) * 100) / 100 : 0;
+  const effectiveMonthlyUnits = useAppliances
+    ? applianceMonthlyUnits
+    : hasUnitsInput
+      ? toPositiveNumber(monthlyUnitsInput)
+      : estimatedUnitsFromBill;
+  const unitsSource = useAppliances
+    ? 'appliance'
+    : hasUnitsInput
+      ? 'units'
+      : hasBillInput
+        ? 'bill'
+        : 'none';
   const [roofType, setRoofType] = useState('concrete');
   const [roofArea, setRoofArea] = useState('');
   const [location, setLocation] = useState('');
@@ -150,10 +166,9 @@ const SolarCalculator = () => {
   const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
   const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
   const avgHoursPerDay = 8;
-  const dailyFromAppliances = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 30 : 0;
-  const dailyFromInput = toPositiveNumber(monthlyUnitsInput) / 30;
-  const dailyUsageKwh = useAppliances ? dailyFromAppliances : dailyFromInput;
-  const recommendedKW = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 120 : 0;
+  const dailyFromEffective = effectiveMonthlyUnits > 0 ? effectiveMonthlyUnits / 30 : 0;
+  const dailyUsageKwh = dailyFromEffective;
+  const recommendedKW = effectiveMonthlyUnits > 0 ? effectiveMonthlyUnits / 120 : 0;
 
   const calculateLocal = (units, panelWatt) => {
     const solarKW = units / 120;
@@ -195,12 +210,7 @@ const SolarCalculator = () => {
   };
 
   const triggerRecalc = () => {
-    let units = toPositiveNumber(monthlyUnitsInput);
-    if (units <= 0) {
-      const bill = toPositiveNumber(currentBill);
-      if (bill > 0) units = bill / 8;
-    }
-    if (useAppliances) units = applianceMonthlyUnits;
+    const units = effectiveMonthlyUnits;
     if (units > 0) {
       setResult(calculateLocal(units, panelSize));
     }
@@ -241,24 +251,9 @@ const SolarCalculator = () => {
   };
 
   const calculateSystem = () => {
-    let units = toPositiveNumber(monthlyUnitsInput);
+    const units = effectiveMonthlyUnits;
 
     if (units <= 0) {
-      const bill = toPositiveNumber(currentBill);
-      if (bill > 0) {
-        units = bill / 8;
-      }
-    }
-
-    if (useAppliances) {
-      units = applianceMonthlyUnits;
-    }
-
-    if (units <= 0) {
-      return;
-    }
-
-    if (useAppliances && applianceMonthlyUnits <= 0) {
       return;
     }
 
@@ -329,17 +324,26 @@ const SolarCalculator = () => {
                 <input
                   type="number"
                   min="1"
-                  value={useAppliances ? applianceMonthlyUnits.toFixed(2) : monthlyUnitsInput}
+                  value={useAppliances ? applianceMonthlyUnits.toFixed(2) : monthlyUnitsInput || (unitsSource === 'bill' ? String(estimatedUnitsFromBill) : '')}
                   onChange={(event) => {
                     setMonthlyUnitsInput(event.target.value);
+                    if (event.target.value) setCurrentBill('');
                     setResult(null);
                   }}
                   placeholder="e.g., 600"
-                  readOnly={useAppliances}
-                  className={`w-full px-4 py-3 rounded-xl border ${useAppliances ? 'bg-gray-50 border-gray-300' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
+                  readOnly={useAppliances || unitsSource === 'bill'}
+                  className={`w-full px-4 py-3 rounded-xl border ${useAppliances || unitsSource === 'bill' ? 'bg-gray-50 border-gray-300' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {useAppliances ? 'Calculated from appliance rows below' : 'Enter the monthly units from your electricity bill'}
+                <p className="text-xs mt-1">
+                  {useAppliances ? (
+                    <span className="text-gray-500">Calculated from appliance rows below</span>
+                  ) : unitsSource === 'bill' ? (
+                    <span className="text-amber-600 font-medium">✓ Units estimated from bill (₹{unitRate}/unit)</span>
+                  ) : unitsSource === 'units' ? (
+                    <span className="text-green-600 font-medium">✓ Using provided units</span>
+                  ) : (
+                    <span className="text-gray-500">Enter the monthly units from your electricity bill</span>
+                  )}
                 </p>
               </div>
 
@@ -347,12 +351,24 @@ const SolarCalculator = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   value={currentBill}
-                  onChange={(event) => setCurrentBill(event.target.value)}
+                  onChange={(event) => {
+                    setCurrentBill(event.target.value);
+                    if (event.target.value) setMonthlyUnitsInput('');
+                    setResult(null);
+                  }}
                   placeholder="e.g., 5000"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg"
+                  disabled={hasUnitsInput}
+                  className={`w-full px-4 py-3 rounded-xl border ${hasUnitsInput ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
                 />
+                <p className="text-xs mt-1">
+                  {hasUnitsInput ? (
+                    <span className="text-gray-400">Bill is ignored while units are provided</span>
+                  ) : (
+                    <span className="text-gray-500">Bill is converted to units at ₹{unitRate}/unit rate</span>
+                  )}
+                </p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -607,7 +623,7 @@ const SolarCalculator = () => {
                     </div>
                     <div className="bg-white rounded-lg p-3">
                       <div className="text-gray-500">Monthly Units</div>
-                      <div className="font-bold text-gray-900">{useAppliances ? applianceMonthlyUnits.toFixed(2) : toPositiveNumber(monthlyUnitsInput).toFixed(2)} kWh</div>
+                      <div className="font-bold text-gray-900">{effectiveMonthlyUnits.toFixed(2)} kWh</div>
                     </div>
                     <div className="bg-white rounded-lg p-3">
                       <div className="text-gray-500">Recommended</div>
