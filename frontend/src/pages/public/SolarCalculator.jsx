@@ -125,6 +125,7 @@ const SolarCalculator = () => {
   const [useAppliances, setUseAppliances] = useState(true);
   const [rows, setRows] = useState(initialRows);
   const [result, setResult] = useState(null);
+  const [panelSize, setPanelSize] = useState(500);
 
   const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
   const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
@@ -132,9 +133,9 @@ const SolarCalculator = () => {
   const dailyUsageKwh = totalLoadW > 0 ? (totalLoadW * avgHoursPerDay) / 1000 : 0;
   const recommendedKW = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 120 : 0;
 
-  const calculateLocal = (units) => {
+  const calculateLocal = (units, panelWatt) => {
     const solarKW = units / 120;
-    const panels = Math.round(solarKW * 2);
+    const panels = Math.ceil((solarKW * 1000) / panelWatt);
     const dailyUnits = Math.round((units / 30) * 100) / 100;
     const monthlySavings = Math.round(units * 8);
     const yearlySavings = monthlySavings * 12;
@@ -192,8 +193,15 @@ const SolarCalculator = () => {
       return;
     }
 
-    const calculationResult = calculateLocal(units);
+    const calculationResult = calculateLocal(units, panelSize);
     setResult(calculationResult);
+  };
+
+  const handlePanelSizeChange = (newPanelSize) => {
+    setPanelSize(newPanelSize);
+    if (result) {
+      setResult(calculateLocal(result.monthlyUnits, newPanelSize));
+    }
   };
 
   const handleGetQuote = () => {
@@ -486,7 +494,30 @@ const SolarCalculator = () => {
                   </div>
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
                     <div className="text-4xl font-bold text-white mb-1">{result.panels}</div>
-                    <div className="text-sm font-semibold text-white/80">Panels Approx</div>
+                    <div className="text-sm font-semibold text-white/80">Panels</div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                  <h3 className="font-semibold text-gray-800 mb-3">Panel Configuration</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Panel Size</label>
+                      <select
+                        value={panelSize}
+                        onChange={(event) => handlePanelSizeChange(Number(event.target.value))}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none font-semibold"
+                      >
+                        <option value={400}>400W</option>
+                        <option value={450}>450W</option>
+                        <option value={500}>500W</option>
+                        <option value={550}>550W</option>
+                      </select>
+                    </div>
+                    <div className="text-center px-6 py-3 bg-white rounded-xl border border-gray-200">
+                      <div className="text-xs text-gray-500">Selected</div>
+                      <div className="text-xl font-bold text-gray-900">{panelSize}W</div>
+                    </div>
                   </div>
                 </div>
 
