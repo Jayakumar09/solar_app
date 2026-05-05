@@ -92,6 +92,26 @@ const toPositiveNumber = (value) => {
   return Number.isFinite(number) && number > 0 ? number : 0;
 };
 
+const clampHours = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return '0';
+  if (num > 24) return '24';
+  return value;
+};
+
+const clampQuantity = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return '1';
+  if (num > 20) return '20';
+  return value;
+};
+
+const clampCustomWatt = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  return String(num);
+};
+
 const getWattValue = (row) => {
   if (row.wattType === 'custom') return toPositiveNumber(row.customWatt);
   return toPositiveNumber(row.watt);
@@ -130,7 +150,9 @@ const SolarCalculator = () => {
   const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
   const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
   const avgHoursPerDay = 8;
-  const dailyUsageKwh = totalLoadW > 0 ? (totalLoadW * avgHoursPerDay) / 1000 : 0;
+  const dailyFromAppliances = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 30 : 0;
+  const dailyFromInput = toPositiveNumber(monthlyUnitsInput) / 30;
+  const dailyUsageKwh = useAppliances ? dailyFromAppliances : dailyFromInput;
   const recommendedKW = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 120 : 0;
 
   const calculateLocal = (units, panelWatt) => {
@@ -153,7 +175,15 @@ const SolarCalculator = () => {
   const updateRow = (id, field, value) => {
     setRows((currentRows) => currentRows.map((row) => {
       if (row.id === id) {
-        const updated = { ...row, [field]: value };
+        let processedValue = value;
+        if (field === 'hours') {
+          processedValue = clampHours(value);
+        } else if (field === 'quantity') {
+          processedValue = clampQuantity(value);
+        } else if (field === 'customWatt') {
+          processedValue = clampCustomWatt(value);
+        }
+        const updated = { ...row, [field]: processedValue };
         if (field === 'name' && value) {
           updated.watt = getDefaultWatt(value);
           updated.wattType = 'preset';
@@ -162,7 +192,42 @@ const SolarCalculator = () => {
       }
       return row;
     }));
-    setResult(null);
+  };
+
+  const triggerRecalc = () => {
+    let units = toPositiveNumber(monthlyUnitsInput);
+    if (units <= 0) {
+      const bill = toPositiveNumber(currentBill);
+      if (bill > 0) units = bill / 8;
+    }
+    if (useAppliances) units = applianceMonthlyUnits;
+    if (units > 0) {
+      setResult(calculateLocal(units, panelSize));
+    }
+  };
+
+  const handleRowBlur = (id, field) => {
+    setRows((currentRows) => currentRows.map((row) => {
+      if (row.id === id) {
+        const updated = { ...row };
+        if (field === 'hours') {
+          const val = toPositiveNumber(row.hours);
+          updated.hours = val > 24 ? '24' : String(Math.max(0, val));
+        } else if (field === 'quantity') {
+          const val = toPositiveNumber(row.quantity);
+          updated.quantity = String(Math.max(1, Math.min(20, val || 1)));
+        } else if (field === 'customWatt' && row.wattType === 'custom') {
+          if (!toPositiveNumber(row.customWatt)) {
+            updated.wattType = 'preset';
+            updated.customWatt = '';
+            updated.watt = getDefaultWatt(row.name);
+          }
+        }
+        return updated;
+      }
+      return row;
+    }));
+    setTimeout(() => triggerRecalc(), 0);
   };
 
   const addRow = () => {
@@ -190,6 +255,10 @@ const SolarCalculator = () => {
     }
 
     if (units <= 0) {
+      return;
+    }
+
+    if (useAppliances && applianceMonthlyUnits <= 0) {
       return;
     }
 
@@ -259,7 +328,7 @@ const SolarCalculator = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Consumption (Units)</label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   value={useAppliances ? applianceMonthlyUnits.toFixed(2) : monthlyUnitsInput}
                   onChange={(event) => {
                     setMonthlyUnitsInput(event.target.value);
@@ -409,9 +478,10 @@ const SolarCalculator = () => {
                                       {row.wattType === 'custom' && (
                                         <input
                                           type="number"
-                                          min="0"
+                                          min="1"
                                           value={row.customWatt}
                                           onChange={(event) => updateRow(row.id, 'customWatt', event.target.value)}
+                                          onBlur={() => handleRowBlur(row.id, 'customWatt')}
                                           placeholder="W"
                                           className="table-input w-full px-1 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
                                         />
@@ -421,9 +491,11 @@ const SolarCalculator = () => {
                                   <td className="px-2 py-2">
                                     <input
                                       type="number"
-                                      min="0"
+                                      min="1"
+                                      max="20"
                                       value={row.quantity}
                                       onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
+                                      onBlur={() => handleRowBlur(row.id, 'quantity')}
                                       className="qty-input"
                                     />
                                   </td>
@@ -435,6 +507,7 @@ const SolarCalculator = () => {
                                       step="0.5"
                                       value={row.hours}
                                       onChange={(event) => updateRow(row.id, 'hours', event.target.value)}
+                                      onBlur={() => handleRowBlur(row.id, 'hours')}
                                       className="table-input w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
                                       style={{ height: '36px' }}
                                     />
@@ -494,7 +567,7 @@ const SolarCalculator = () => {
                   </div>
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
                     <div className="text-4xl font-bold text-white mb-1">{result.panels}</div>
-                    <div className="text-sm font-semibold text-white/80">Panels</div>
+                    <div className="text-sm font-semibold text-white/80">Panels Required</div>
                   </div>
                 </div>
 
@@ -515,8 +588,8 @@ const SolarCalculator = () => {
                       </select>
                     </div>
                     <div className="text-center px-6 py-3 bg-white rounded-xl border border-gray-200">
-                      <div className="text-xs text-gray-500">Selected</div>
-                      <div className="text-xl font-bold text-gray-900">{panelSize}W</div>
+                      <div className="text-xs text-gray-500">Panels Required</div>
+                      <div className="text-xl font-bold text-gray-900">{result ? result.panels : '-'}</div>
                     </div>
                   </div>
                 </div>
@@ -534,7 +607,7 @@ const SolarCalculator = () => {
                     </div>
                     <div className="bg-white rounded-lg p-3">
                       <div className="text-gray-500">Monthly Units</div>
-                      <div className="font-bold text-gray-900">{applianceMonthlyUnits.toFixed(2)} kWh</div>
+                      <div className="font-bold text-gray-900">{useAppliances ? applianceMonthlyUnits.toFixed(2) : toPositiveNumber(monthlyUnitsInput).toFixed(2)} kWh</div>
                     </div>
                     <div className="bg-white rounded-lg p-3">
                       <div className="text-gray-500">Recommended</div>
