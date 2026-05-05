@@ -38,10 +38,45 @@ const APPLIANCE_LIST = [
   'Electric Stove',
 ];
 
+const WATT_VALUES = {
+  "Lamp": [5, 9, 12, 15],
+  "Ceiling Fan": [60, 75, 90],
+  "Table Fan": [40, 55, 75],
+  "TV": [60, 100, 150],
+  "Geyser": [1000, 1500, 2000],
+  "Heater": [1000, 1500, 2000],
+  "Immersion Rod": [1000, 1500],
+  "Refrigerator": [150, 200, 300],
+  "Washing Machine": [400, 500, 700],
+  "Water Pump": [750, 1000, 1500],
+  "Air Conditioner": [1000, 1500, 2000],
+  "Electric Iron": [750, 1000],
+  "Mixer": [300, 500],
+  "Personal Computer": [150, 250],
+  "Dhobi Iron": [1000, 1200],
+  "Stove": [1000, 1500],
+  "Electric Cooker": [1200, 1800],
+  "Toaster": [800, 1200],
+  "Cloth Drier / Spin Drier": [1000, 1500],
+  "Mobile Charger": [5, 10],
+  "Oven 2 plates / 3 plates": [1500, 2000],
+  "Cooking Range": [2000, 3000],
+  "BLDC Ceiling Fan": [25, 35],
+  "Grinder": [500, 750],
+  "Electric Stove": [1200, 2000]
+};
+
+const getDefaultWatt = (applianceName) => {
+  const values = WATT_VALUES[applianceName];
+  if (!values || values.length === 0) return '';
+  const midIndex = Math.floor(values.length / 2);
+  return String(values[midIndex]);
+};
+
 const emptyRow = (id, name = '') => ({
   id,
   name,
-  watt: '',
+  watt: name ? getDefaultWatt(name) : '',
   quantity: '1',
   hours: '',
 });
@@ -96,9 +131,16 @@ const SolarCalculator = () => {
   };
 
   const updateRow = (id, field, value) => {
-    setRows((currentRows) => currentRows.map((row) => (
-      row.id === id ? { ...row, [field]: value } : row
-    )));
+    setRows((currentRows) => currentRows.map((row) => {
+      if (row.id === id) {
+        const updated = { ...row, [field]: value };
+        if (field === 'name' && value) {
+          updated.watt = getDefaultWatt(value);
+        }
+        return updated;
+      }
+      return row;
+    }));
     setResult(null);
   };
 
@@ -309,13 +351,16 @@ const SolarCalculator = () => {
                                   />
                                 </td>
                                 <td className="px-3 py-2">
-                                  <input
-                                    type="number"
-                                    min="0"
+                                  <select
                                     value={row.watt}
                                     onChange={(event) => updateRow(row.id, 'watt', event.target.value)}
                                     className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                  />
+                                  >
+                                    <option value="">Select</option>
+                                    {(WATT_VALUES[row.name] || []).map((w) => (
+                                      <option key={w} value={String(w)}>{w}W</option>
+                                    ))}
+                                  </select>
                                 </td>
                                 <td className="px-3 py-2">
                                   <input
