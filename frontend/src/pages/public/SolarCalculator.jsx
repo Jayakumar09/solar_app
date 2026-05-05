@@ -154,6 +154,7 @@ const SolarCalculator = () => {
   const hasUnitsInput = toPositiveNumber(monthlyUnitsInput) > 0;
   const hasBillInput = toPositiveNumber(currentBill) > 0;
   const estimatedUnitsFromBill = hasBillInput ? Math.round((toPositiveNumber(currentBill) / unitRate) * 100) / 100 : 0;
+  const unitsFromBillActive = !useAppliances && !hasUnitsInput && hasBillInput;
   const effectiveMonthlyUnits = useAppliances
     ? applianceMonthlyUnits
     : hasUnitsInput
@@ -326,28 +327,27 @@ const SolarCalculator = () => {
                 <input
                   type="number"
                   min="1"
-                  value={useAppliances ? applianceMonthlyUnits.toFixed(2) : monthlyUnitsInput || (unitsSource === 'bill' ? String(estimatedUnitsFromBill) : '')}
+                  value={useAppliances ? applianceMonthlyUnits.toFixed(2) : unitsFromBillActive ? String(estimatedUnitsFromBill) : monthlyUnitsInput}
                   onChange={(event) => {
                     setMonthlyUnitsInput(event.target.value);
-                    if (event.target.value) setCurrentBill('');
                     setResult(null);
                   }}
                   placeholder="e.g., 600"
-                  readOnly={useAppliances || unitsSource === 'bill'}
-                  className={`w-full px-4 py-3 rounded-xl border ${useAppliances || unitsSource === 'bill' ? 'bg-gray-50 border-gray-300' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
+                  readOnly={useAppliances || unitsFromBillActive}
+                  className={`w-full px-4 py-3 rounded-xl border ${useAppliances || unitsFromBillActive ? 'bg-gray-50 border-gray-300' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
                 />
                 <p className="text-xs mt-1">
                   {useAppliances ? (
                     <span className="text-gray-500">Calculated from appliance rows below</span>
-                  ) : unitsSource === 'bill' ? (
+                  ) : unitsFromBillActive ? (
                     <span className="text-amber-600 font-medium">✓ Units estimated from bill (₹{unitRate}/unit)</span>
-                  ) : unitsSource === 'units' ? (
+                  ) : hasUnitsInput ? (
                     <span className="text-green-600 font-medium">✓ Using provided units</span>
                   ) : null}
                 </p>
               </div>
 
-              {!useAppliances && unitsSource !== 'bill' && (
+              {!useAppliances && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Electricity Bill (Rs)</label>
                   <input
@@ -356,12 +356,10 @@ const SolarCalculator = () => {
                     value={currentBill}
                     onChange={(event) => {
                       setCurrentBill(event.target.value);
-                      if (event.target.value) setMonthlyUnitsInput('');
                       setResult(null);
                     }}
                     placeholder="e.g., 5000"
-                    disabled={hasUnitsInput}
-                    className={`w-full px-4 py-3 rounded-xl border ${hasUnitsInput ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' : 'border-gray-200'} focus:ring-2 focus:ring-amber-500 outline-none text-lg`}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg"
                   />
                 </div>
               )}
