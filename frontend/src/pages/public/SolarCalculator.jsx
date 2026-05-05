@@ -77,6 +77,8 @@ const emptyRow = (id, name = '') => ({
   id,
   name,
   watt: name ? getDefaultWatt(name) : '',
+  wattType: 'preset',
+  customWatt: '',
   quantity: '1',
   hours: '',
 });
@@ -90,14 +92,27 @@ const toPositiveNumber = (value) => {
   return Number.isFinite(number) && number > 0 ? number : 0;
 };
 
+const getWattValue = (row) => {
+  if (row.wattType === 'custom') return toPositiveNumber(row.customWatt);
+  return toPositiveNumber(row.watt);
+};
+
 const getApplianceMonthlyUnits = (rows) => {
   const dailyUnits = rows.reduce((total, row) => {
-    const watt = toPositiveNumber(row.watt);
+    const watt = getWattValue(row);
     const quantity = toPositiveNumber(row.quantity);
     const hours = toPositiveNumber(row.hours);
     return total + (watt * quantity * hours) / 1000;
   }, 0);
   return dailyUnits * 30;
+};
+
+const getTotalLoadW = (rows) => {
+  return rows.reduce((total, row) => {
+    const watt = getWattValue(row);
+    const quantity = toPositiveNumber(row.quantity);
+    return total + (watt * quantity);
+  }, 0);
 };
 
 const SolarCalculator = () => {
@@ -112,6 +127,10 @@ const SolarCalculator = () => {
   const [result, setResult] = useState(null);
 
   const applianceMonthlyUnits = useMemo(() => getApplianceMonthlyUnits(rows), [rows]);
+  const totalLoadW = useMemo(() => getTotalLoadW(rows), [rows]);
+  const avgHoursPerDay = 8;
+  const dailyUsageKwh = totalLoadW > 0 ? (totalLoadW * avgHoursPerDay) / 1000 : 0;
+  const recommendedKW = applianceMonthlyUnits > 0 ? applianceMonthlyUnits / 120 : 0;
 
   const calculateLocal = (units) => {
     const solarKW = units / 120;
@@ -136,6 +155,7 @@ const SolarCalculator = () => {
         const updated = { ...row, [field]: value };
         if (field === 'name' && value) {
           updated.watt = getDefaultWatt(value);
+          updated.wattType = 'preset';
         }
         return updated;
       }
@@ -194,9 +214,9 @@ const SolarCalculator = () => {
         },
         applianceData: useAppliances ? {
           monthlyUnits: result.monthlyUnits,
-          appliances: rows.filter(r => toPositiveNumber(r.watt) > 0 && toPositiveNumber(r.quantity) > 0 && toPositiveNumber(r.hours) > 0).map(r => ({
+          appliances: rows.filter(r => getWattValue(r) > 0 && toPositiveNumber(r.quantity) > 0 && toPositiveNumber(r.hours) > 0).map(r => ({
             name: r.name,
-            watt: toPositiveNumber(r.watt),
+            watt: getWattValue(r),
             quantity: toPositiveNumber(r.quantity),
             hours: toPositiveNumber(r.hours),
           })),
@@ -338,7 +358,7 @@ const SolarCalculator = () => {
                         </thead>
                         <tbody>
                           {rows.map((row) => {
-                            const rowUnits = (toPositiveNumber(row.watt) * toPositiveNumber(row.quantity) * toPositiveNumber(row.hours) * 30) / 1000;
+                            const rowUnits = (getWattValue(row) * toPositiveNumber(row.quantity) * toPositiveNumber(row.hours) * 30) / 1000;
                             return (
                               <tr key={row.id} className="border-t border-gray-100">
                                 <td className="px-3 py-2">
@@ -351,16 +371,36 @@ const SolarCalculator = () => {
                                   />
                                 </td>
                                 <td className="px-3 py-2">
-                                  <select
-                                    value={row.watt}
-                                    onChange={(event) => updateRow(row.id, 'watt', event.target.value)}
-                                    className="w-full px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                  >
-                                    <option value="">Select</option>
-                                    {(WATT_VALUES[row.name] || []).map((w) => (
-                                      <option key={w} value={String(w)}>{w}W</option>
-                                    ))}
-                                  </select>
+                                  <div className="flex gap-1">
+                                    <select
+                                      value={row.wattType === 'custom' ? 'custom' : row.watt}
+                                      onChange={(event) => {
+                                        if (event.target.value === 'custom') {
+                                          updateRow(row.id, 'wattType', 'custom');
+                                        } else {
+                                          updateRow(row.id, 'watt', event.target.value);
+                                          updateRow(row.id, 'wattType', 'preset');
+                                        }
+                                      }}
+                                      className="flex-1 px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    >
+                                      <option value="">Select</option>
+                                      {(WATT_VALUES[row.name] || []).map((w) => (
+                                        <option key={w} value={String(w)}>{w}W</option>
+                                      ))}
+                                      <option value="custom">Custom</option>
+                                    </select>
+                                    {row.wattType === 'custom' && (
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={row.customWatt}
+                                        onChange={(event) => updateRow(row.id, 'customWatt', event.target.value)}
+                                        placeholder="Watt"
+                                        className="w-20 px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                      />
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2">
                                   <input
@@ -437,6 +477,28 @@ const SolarCalculator = () => {
                   <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 text-center">
                     <div className="text-4xl font-bold text-white mb-1">{result.panels}</div>
                     <div className="text-sm font-semibold text-white/80">Panels Approx</div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                  <h3 className="font-semibold text-gray-800 mb-3">Load Calculator Summary</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-gray-500">Total Load</div>
+                      <div className="font-bold text-gray-900">{totalLoadW.toFixed(0)} W</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-gray-500">Daily Usage</div>
+                      <div className="font-bold text-gray-900">{dailyUsageKwh.toFixed(2)} kWh</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-gray-500">Monthly Units</div>
+                      <div className="font-bold text-gray-900">{applianceMonthlyUnits.toFixed(2)} kWh</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-gray-500">Recommended</div>
+                      <div className="font-bold text-gray-900">{recommendedKW.toFixed(2)} kW</div>
+                    </div>
                   </div>
                 </div>
 
