@@ -345,97 +345,99 @@ const SolarCalculator = () => {
                       </button>
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl border border-gray-200">
-                      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
-                        <colgroup>
-                          <col style={{ width: '30%' }} />
-                          <col style={{ width: '20%' }} />
-                          <col style={{ width: '15%' }} />
-                          <col style={{ width: '15%' }} />
-                          <col style={{ width: '20%' }} />
-                        </colgroup>
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Appliance</th>
-                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Watt</th>
-                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Qty</th>
-                            <th className="text-left px-4 py-3 font-semibold text-gray-600">Hours/day</th>
-                            <th className="text-right px-4 py-3 font-semibold text-gray-600">Units/month</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((row) => {
-                            const rowUnits = (getWattValue(row) * toPositiveNumber(row.quantity) * toPositiveNumber(row.hours) * 30) / 1000;
-                            return (
-                              <tr key={row.id} className="border-t border-gray-100">
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="text"
-                                    list="appliances"
-                                    value={row.name}
-                                    onChange={(event) => updateRow(row.id, 'name', event.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <div className="flex gap-1">
-                                    <select
-                                      value={row.wattType === 'custom' ? 'custom' : row.watt}
-                                      onChange={(event) => {
-                                        if (event.target.value === 'custom') {
-                                          updateRow(row.id, 'wattType', 'custom');
-                                        } else {
-                                          updateRow(row.id, 'watt', event.target.value);
-                                          updateRow(row.id, 'wattType', 'preset');
-                                        }
-                                      }}
-                                      className="flex-1 px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                    >
-                                      <option value="">Select</option>
-                                      {(WATT_VALUES[row.name] || []).map((w) => (
-                                        <option key={w} value={String(w)}>{w}W</option>
-                                      ))}
-                                      <option value="custom">Custom</option>
-                                    </select>
-                                    {row.wattType === 'custom' && (
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        value={row.customWatt}
-                                        onChange={(event) => updateRow(row.id, 'customWatt', event.target.value)}
-                                        placeholder="Watt"
-                                        className="w-20 px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                      />
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={row.quantity}
-                                    onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
-                                    className="qty-input"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="24"
-                                    step="0.5"
-                                    value={row.hours}
-                                    onChange={(event) => updateRow(row.id, 'hours', event.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
-                                    style={{ height: '36px', minWidth: '60px' }}
-                                  />
-                                </td>
-                                <td className="px-4 py-2 text-right font-semibold text-gray-700">{rowUnits.toFixed(2)}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div className="rounded-xl border border-gray-200 overflow-hidden" style={{ maxHeight: '450px' }}>
+                      <div className="overflow-y-auto" style={{ maxHeight: '450px' }}>
+                        <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
+                          <colgroup>
+                            <col style={{ width: '30%' }} />
+                            <col style={{ width: '20%' }} />
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '20%' }} />
+                          </colgroup>
+                          <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                              <th className="text-left px-4 py-3 font-semibold text-gray-600">Appliance</th>
+                              <th className="text-left px-4 py-3 font-semibold text-gray-600">Watt</th>
+                              <th className="text-left px-4 py-3 font-semibold text-gray-600">Qty</th>
+                              <th className="text-left px-4 py-3 font-semibold text-gray-600">Hours/day</th>
+                              <th className="text-right px-4 py-3 font-semibold text-gray-600">Units/month</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((row) => {
+                              const rowUnits = (getWattValue(row) * toPositiveNumber(row.quantity) * toPositiveNumber(row.hours) * 30) / 1000;
+                              return (
+                                <tr key={row.id} className="border-t border-gray-100">
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      list="appliances"
+                                      value={row.name}
+                                      onChange={(event) => updateRow(row.id, 'name', event.target.value)}
+                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex gap-1">
+                                      <select
+                                        value={row.wattType === 'custom' ? 'custom' : row.watt}
+                                        onChange={(event) => {
+                                          if (event.target.value === 'custom') {
+                                            updateRow(row.id, 'wattType', 'custom');
+                                          } else {
+                                            updateRow(row.id, 'watt', event.target.value);
+                                            updateRow(row.id, 'wattType', 'preset');
+                                          }
+                                        }}
+                                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                      >
+                                        <option value="">Select</option>
+                                        {(WATT_VALUES[row.name] || []).map((w) => (
+                                          <option key={w} value={String(w)}>{w}W</option>
+                                        ))}
+                                        <option value="custom">Custom</option>
+                                      </select>
+                                      {row.wattType === 'custom' && (
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={row.customWatt}
+                                          onChange={(event) => updateRow(row.id, 'customWatt', event.target.value)}
+                                          placeholder="Watt"
+                                          className="w-20 px-2 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                        />
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={row.quantity}
+                                      onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
+                                      className="qty-input"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="24"
+                                      step="0.5"
+                                      value={row.hours}
+                                      onChange={(event) => updateRow(row.id, 'hours', event.target.value)}
+                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 outline-none focus:ring-1 focus:ring-amber-500"
+                                      style={{ height: '36px', minWidth: '60px' }}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2 text-right font-semibold text-gray-700">{rowUnits.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                       <datalist id="appliances">
                         {APPLIANCE_LIST.map((appliance) => (
                           <option key={appliance} value={appliance} />
