@@ -5,10 +5,7 @@ import { officeContact, businessTrust } from '../../config/siteContent';
 
 export default function PublicFooter() {
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-primary-900/50 to-gray-900 text-gray-300 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-[150px]" />
-      </div>
+    <footer className="bg-gray-900 text-gray-200">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14">
@@ -22,13 +19,13 @@ export default function PublicFooter() {
               </div>
               <div>
                 <span className="font-bold text-xl text-white group-hover:text-amber-300 transition-colors">Green Hybrid</span>
-                <span className="block text-xs text-amber-300/80">Power Solutions</span>
+                <span className="block text-xs text-amber-300">Power Solutions</span>
               </div>
             </Link>
-            <p className="text-sm text-gray-400 mb-5 leading-relaxed">India&apos;s Smart Solar + Financing Platform. Zero upfront cost solar installation with SISFS financing.</p>
+            <p className="text-sm text-gray-300 mb-5 leading-relaxed">India&apos;s Smart Solar + Financing Platform. Zero upfront cost solar installation with SISFS financing.</p>
             <div className="flex space-x-3">
               {[Facebook, Instagram, Linkedin, Twitter].map((Icon, i) => (
-                <motion.a key={i} href="#" className="w-10 h-10 rounded-xl bg-gray-800/50 flex items-center justify-center hover:bg-primary-600 transition-all hover:-translate-y-1" whileHover={{ scale: 1.1 }}>
+                <motion.a key={i} href="#" className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-primary-600 transition-all hover:-translate-y-1" whileHover={{ scale: 1.1 }}>
                   <Icon className="w-4 h-4" />
                 </motion.a>
               ))}
@@ -58,51 +55,51 @@ export default function PublicFooter() {
             <ul className="space-y-4">
               <li className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 mt-0.5 text-primary-400 flex-shrink-0" />
-                <span className="text-gray-400">{officeContact.fullAddress}</span>
+                <span className="text-gray-300">{officeContact.fullAddress}</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                <a href={officeContact.phoneHref} className="text-gray-400 hover:text-amber-400 transition-colors">{officeContact.phone}</a>
+                <a href={officeContact.phoneHref} className="text-gray-300 hover:text-amber-400 transition-colors">{officeContact.phone}</a>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                <span className="text-gray-400">{officeContact.email}</span>
+                <span className="text-gray-300">{officeContact.email}</span>
               </li>
             </ul>
-            <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-primary-600/20 border border-primary-500/20">
+            <div className="mt-6 p-4 rounded-xl bg-primary-900/60 border border-primary-700/50">
               <p className="text-sm text-white font-medium">📞 Book Free Inspection</p>
               <Link to="/book-inspection" className="text-amber-300 text-sm hover:text-amber-200 transition-colors">Get Started →</Link>
             </div>
           </motion.div>
         </div>
 
-        <motion.div className="border-t border-gray-800/50 mt-14 pt-10 mb-10" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+        <motion.div className="border-t border-gray-800 mt-14 pt-10 mb-10" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800 border border-gray-700">
               <MapPin className="w-5 h-5 text-amber-400 flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Office Address</p>
-                <p className="text-sm text-gray-300 font-medium">{businessTrust.address}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Office Address</p>
+                <p className="text-sm text-white font-medium">{businessTrust.address}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800 border border-gray-700">
               <BadgeCheck className="w-5 h-5 text-amber-400 flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">GST Number</p>
-                <p className="text-sm text-gray-300 font-medium">{businessTrust.gst}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">GST Number</p>
+                <p className="text-sm text-white font-medium">{businessTrust.gst}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800 border border-gray-700">
               <Users className="w-5 h-5 text-amber-400 flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Founder</p>
-                <p className="text-sm text-gray-300 font-medium">{businessTrust.founder}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Founder</p>
+                <p className="text-sm text-white font-medium">{businessTrust.founder}</p>
               </div>
             </div>
           </div>
         </motion.div>
 
-        <motion.div className="border-t border-gray-800/50 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+        <motion.div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
           <p>© 2026 Green Hybrid Power Pvt. Ltd. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link to="/privacy" className="hover:text-primary-400 transition-colors">Privacy Policy</Link>
