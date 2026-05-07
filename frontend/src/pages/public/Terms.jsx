@@ -7,9 +7,9 @@ export default function Terms() {
     <>
       <title>Terms &amp; Conditions | Green Hybrid Power</title>
       <meta name="description" content="Terms and Conditions for Green Hybrid Power. Rules and legal terms for use of the site and services." />
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16">
+      <div className="bg-gray-50 pt-20 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-card p-8 lg:p-12">
+          <div className="bg-white rounded-2xl shadow-card p-6 lg:p-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Terms &amp; Conditions</h1>
             <div className="prose prose-lg max-w-none text-gray-600 space-y-6">
               <p>Last updated: {currentYear}</p>

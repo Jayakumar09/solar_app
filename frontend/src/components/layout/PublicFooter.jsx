@@ -7,8 +7,8 @@ export default function PublicFooter() {
   return (
     <footer className="bg-gray-900 text-gray-200">
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <Link to="/" className="flex items-center space-x-3 mb-5 group">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-lg">
@@ -73,7 +73,7 @@ export default function PublicFooter() {
           </motion.div>
         </div>
 
-        <motion.div className="border-t border-gray-800 mt-14 pt-10 mb-10" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+        <motion.div className="border-t border-gray-800 mt-10 pt-8 mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800 border border-gray-700">
               <MapPin className="w-5 h-5 text-amber-400 flex-shrink-0" />

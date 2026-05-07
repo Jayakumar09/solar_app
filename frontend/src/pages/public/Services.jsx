@@ -65,20 +65,20 @@ export default function Services() {
 
   return (
     <div className="pt-20">
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-12 lg:py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center max-w-3xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">Our <span className="text-primary-600">Services & Plans</span></h1>
+          <motion.div className="text-center max-w-3xl mx-auto mb-10 lg:mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our <span className="text-primary-600">Services & Plans</span></h1>
             <p className="text-lg text-gray-600">Comprehensive renewable energy solutions designed to meet every need and budget</p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-3 gap-8 mb-20">
+          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 mb-16">
             {managedPlans.map(({ id, type, name, price, desc, description, features, popular, image_url, solar_panel_image_url, inverter_image_url, battery_image_url }, i) => (
               <motion.div key={id || type} className={`relative overflow-hidden bg-white rounded-3xl shadow-lg ${popular ? 'ring-2 ring-primary-500 scale-105' : ''}`} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 {popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-500 text-white text-sm font-medium rounded-full">Most Popular</div>}
                 <PlanImage src={image_url} alt={name} planType={type} className="h-56 w-full" />
-                <div className="p-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
+                <div className="p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{name}</h3>
                 <p className="text-gray-600 text-sm mb-4">{description || desc}</p>
                 <div className="text-3xl font-bold text-primary-700 mb-6">{typeof price === 'number' ? `Rs ${price.toLocaleString()}` : price}</div>
                 <div className="grid grid-cols-3 gap-3 mb-6">
@@ -102,11 +102,11 @@ export default function Services() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">What We Offer</h2>
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">What We Offer</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {services.map(({ icon: Icon, title, desc }, i) => (
-                <div key={title} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow">
-                  <div className="w-14 h-14 rounded-xl gradient-primary flex items-center justify-center mb-4">
+                <div key={title} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg transition-shadow">
+                  <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mb-3">
                     <Icon className="w-7 h-7 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>

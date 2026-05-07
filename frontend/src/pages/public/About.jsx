@@ -19,14 +19,14 @@ const milestones = [
 export default function About() {
   return (
     <div className="pt-20">
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-12 lg:py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center max-w-3xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">About <span className="text-primary-600">Green Hybrid Power</span></h1>
+          <motion.div className="text-center max-w-3xl mx-auto mb-10 lg:mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">About <span className="text-primary-600">Green Hybrid Power</span></h1>
             <p className="text-lg text-gray-600">We are Maharashtra's leading renewable energy company, dedicated to providing sustainable solar and wind solutions for homes and businesses since 2015.</p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center mb-16">
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-gray-600 mb-4">Founded in 2015 by Rajesh Sharma, Green Hybrid Power started with a vision to make renewable energy accessible to every household in India. What began as a small team of passionate engineers has grown into one of Maharashtra's most trusted names in solar solutions.</p>
@@ -56,7 +56,7 @@ export default function About() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Our Leadership Team</h2>
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Our Leadership Team</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {team.map(({ name, role, exp }) => (
                 <div key={name} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow text-center">

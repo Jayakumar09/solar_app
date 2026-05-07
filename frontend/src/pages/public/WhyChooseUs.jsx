@@ -23,14 +23,14 @@ const stats = [
 export default function WhyChooseUs() {
   return (
     <div className="pt-20">
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-12 lg:py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center max-w-3xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">Why Choose <span className="text-primary-600">Green Hybrid Power</span></h1>
+          <motion.div className="text-center max-w-3xl mx-auto mb-10 lg:mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Why Choose <span className="text-primary-600">Green Hybrid Power</span></h1>
             <p className="text-lg text-gray-600">What sets us apart from other renewable energy providers</p>
           </motion.div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
             {stats.map(({ value, label }, i) => (
               <motion.div key={label} className="text-center p-6 bg-white rounded-2xl shadow-sm" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 <div className="text-3xl lg:text-4xl font-bold text-primary-700 mb-1">{value}</div>
@@ -51,7 +51,7 @@ export default function WhyChooseUs() {
             ))}
           </div>
 
-          <motion.div className="mt-16 bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-8 lg:p-12 text-white text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+          <motion.div className="mt-12 bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-6 lg:p-8 text-white text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
             <h3 className="text-2xl font-bold mb-4">Ready to Experience the Green Hybrid Difference?</h3>
             <p className="text-white/80 mb-6 max-w-2xl mx-auto">Get a free consultation and customized quotation from our experts. No obligations, just honest advice.</p>
             <a href={officeContact.phoneHref} className="inline-flex items-center px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-300 transition-colors">

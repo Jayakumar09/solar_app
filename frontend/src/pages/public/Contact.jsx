@@ -25,14 +25,14 @@ export default function Contact() {
 
   return (
     <div className="pt-20">
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-12 lg:py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center max-w-3xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">Contact <span className="text-primary-600">Us</span></h1>
+          <motion.div className="text-center max-w-3xl mx-auto mb-10 lg:mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Contact <span className="text-primary-600">Us</span></h1>
             <p className="text-lg text-gray-600">Have questions? We would love to hear from you.</p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-3 gap-12">
+          <div className="grid lg:grid-cols-3 gap-8 lg:gap-10">
             <motion.div className="lg:col-span-2" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}>
               <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-8 shadow-lg">
                 <div className="grid md:grid-cols-2 gap-6 mb-6">

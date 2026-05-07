@@ -301,7 +301,7 @@ const SolarCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50">
+    <div className="bg-gradient-to-br from-gray-50 to-primary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -556,7 +556,7 @@ const SolarCalculator = () => {
             animate={{ opacity: 1, x: 0 }}
           >
             {!result ? (
-              <div className="flex flex-col items-center justify-center h-full py-16 text-gray-400">
+              <div className="flex flex-col items-center justify-center h-full py-10 text-gray-400">
                 <Sun className="w-20 h-20 mb-4 opacity-30" />
                 <p className="text-lg font-medium">Enter units to see results</p>
                 <p className="text-sm">Uses Monthly Units / 120 formula</p>

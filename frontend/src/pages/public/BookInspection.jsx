@@ -26,13 +26,13 @@ export default function BookInspection() {
 
   return (
     <div className="pt-20">
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-12 lg:py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-6">
-              <Calendar className="w-8 h-8 text-white" />
+          <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
+            <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Book Free Site <span className="text-primary-600">Inspection</span></h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Book Free Site <span className="text-primary-600">Inspection</span></h1>
             <p className="text-lg text-gray-600">Our experts will visit your property and provide a free consultation</p>
           </motion.div>
 
