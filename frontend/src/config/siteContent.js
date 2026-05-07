@@ -8,6 +8,12 @@ export const officeContact = {
   email: 'info@greenhybridpower.in',
 };
 
+export const businessTrust = {
+  address: 'Tiruchirappalli, Tamilnadu - 621011',
+  gst: '33AJMPJ9370P1ZG',
+  founder: 'Er. V. Jayakumar',
+};
+
 export const planPlaceholders = {
   basic: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200&q=80',
   hybrid: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=1200&q=80',

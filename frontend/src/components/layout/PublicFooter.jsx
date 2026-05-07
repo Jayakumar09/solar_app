@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Sun, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, Twitter, Zap, Wind } from 'lucide-react';
+import { Sun, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, Twitter, Zap, Wind, BadgeCheck, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { officeContact } from '../../config/siteContent';
+import { officeContact, businessTrust } from '../../config/siteContent';
 
 export default function PublicFooter() {
   return (
@@ -76,8 +76,34 @@ export default function PublicFooter() {
           </motion.div>
         </div>
 
-        <motion.div className="border-t border-gray-800/50 mt-14 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-          <p>© 2024 Green Hybrid Power Pvt. Ltd. All rights reserved.</p>
+        <motion.div className="border-t border-gray-800/50 mt-14 pt-10 mb-10" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+              <MapPin className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Office Address</p>
+                <p className="text-sm text-gray-300 font-medium">{businessTrust.address}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+              <BadgeCheck className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">GST Number</p>
+                <p className="text-sm text-gray-300 font-medium">{businessTrust.gst}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-800/40 border border-gray-700/30">
+              <Users className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Founder</p>
+                <p className="text-sm text-gray-300 font-medium">{businessTrust.founder}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div className="border-t border-gray-800/50 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+          <p>© 2026 Green Hybrid Power Pvt. Ltd. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link to="/privacy" className="hover:text-primary-400 transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-primary-400 transition-colors">Terms of Service</Link>
