@@ -10,6 +10,8 @@ import solarV2Routes from './routes/solarV2.js';
 import portalRoutes from './routes/portal.js';
 import leadsRoutes from './routes/leads.js';
 import adminDataRoutes from './routes/adminData.js';
+import plansRoutes from './routes/plans.js';
+import contactRoutes from './routes/contact.js';
 import { createBlogTable, getBlogCount } from './models/blog.js';
 import { createUsersTable, getUserByEmail, createUser } from './models/users.js';
 import { seedBlogs } from './scripts/seedBlogs.js';
@@ -45,6 +47,8 @@ app.use('/api/v2/solar', solarV2Routes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/admin', adminDataRoutes);
+app.use('/api/plans', plansRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', async (req, res) => {
   try {
@@ -131,6 +135,27 @@ const createAdminTables = async () => {
       subject VARCHAR(255),
       message TEXT,
       status VARCHAR(50) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS plans (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255),
+      price NUMERIC,
+      features JSONB,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS contacts (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255),
+      email VARCHAR(255),
+      phone VARCHAR(50),
+      message TEXT,
+      city VARCHAR(100),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
