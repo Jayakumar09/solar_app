@@ -1,0 +1,18 @@
+# Cloudflare Pages SPA Routing
+# Forward all frontend routes to index.html, except API calls
+
+# API routes - do not rewrite
+/api/*  200  //api
+
+# Static assets - serve directly
+/*.json 200
+/*.js   200
+/*.css  200
+/*.png  200
+/*.svg  200
+/*.ico  200
+/*.woff 200
+/*.woff2 200
+
+# Frontend routes - serve index.html for SPA routing
+/* /index.html 200
